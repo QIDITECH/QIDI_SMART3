@@ -1,0 +1,1 @@
+# QIDI_SMART3
