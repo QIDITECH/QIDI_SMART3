@@ -12,7 +12,7 @@ QIDISmart3 is a server-side software that interacts with the screen in the smart
 ```shell
 cd /root
 rm -rf xindi
-git clone https://github.com/Rainboooom/QIDISmart3.git
+git clone https://github.com/QIDITECH/QIDI_SMART3.git
 ```
 4. Code cloning may take some time, please be patient. If there are certificate issues, please confirm if the system time is correct. After the code cloning is completed, enter the following code block
 ```shell
