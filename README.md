@@ -25,7 +25,7 @@ make
 
 ## Others
 
-The 3D printers of QIDI are based on Klipper.On the basic of Klipper open source project, we have made some modifications to it's source code to meet some of the user's needs.At the same time, we have also made modifications to Moonraker and Fluid, so that the screens we set can correspond to the operations on the page.
+The 3D printers of QIDI are based on Klipper.On the basic of Klipper open source project, we have made some modifications to it's source code to meet some of the user's needs.At the same time, we have also made modifications to Moonraker, so that the screens we set can correspond to the operations on the page.
 Thanks to the developers and maintainers of these open source projects.Please consider using or supporting these powerful projects.
 
  Software |  QIDI edition
