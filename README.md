@@ -16,7 +16,7 @@ git clone https://github.com/Rainboooom/QIDISmart3.git
 ```
 4. Code cloning may take some time, please be patient. If there are certificate issues, please confirm if the system time is correct. After the code cloning is completed, enter the following code block
 ```shell
-mv QIDISmart3 xindi
+mv QIDI_SMART3 xindi
 cd /root/xindi/build
 cmake ..
 make
