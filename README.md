@@ -9,9 +9,12 @@ QIDI provides a packaged version file in the version bar next to it. Please down
 ## Detailed update process
 #### Packaged files
 1. Prepare a blank named USB drive.Please ensure that the device name of the USB drive is empty
+
 <p align="left"><img src="other/blankname.png" height="360" alt="sample"></p>
+
 2. Select the latest version in the version release bar next to it, download the compressed file package starting with SMART and extract it locally.
 3. Place the files in the USB drive, such as
+
 <p align="left"><img src="other/sample.png" height="240" alt="sample"></p>
 
 4. Insert the USB drive into the machine's USB interface, and an update prompt will appear on the version information interface. Click the update button to restart according to the prompt.
