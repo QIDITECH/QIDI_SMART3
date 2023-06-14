@@ -7,6 +7,12 @@ QIDISmart3 is a server-side software that interacts with the screen in the smart
 QIDI provides a packaged version file in the version bar next to it. Please download the compressed package file starting with SMART.
 
 ## Detailed update process
+#### Packaged files
+1. Prepare a blank named USB drive
+2. Select the latest version in the version release bar next to it, download the compressed file package starting with SMART and extract it locally.
+3. Place the files in the USB drive
+4. Such as
+#### Compile
 1. Connect machines to the network and connect through SSH
 2. Log in as root.The password is `makerbase`
 3. After logging in, enter the following code block
@@ -23,6 +29,10 @@ cmake ..
 make
 ```
 5. The complete code compilation also takes some time, patiently wait for the compilation to complete, shut down and wait for 20 seconds before starting.
+
+## Report Issues and Make Suggestions
+
+You can contact [After-Sales Service](https://qidi3d.com/pages/warranty-policy-after-sales-support) to report issues and make suggestions.
 
 ## Others
 
