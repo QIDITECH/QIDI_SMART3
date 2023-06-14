@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/Rainboooom/test/blob/main/QIDI.png" height="240" alt="QIDI's logo" /></p>
+<p align="center"><img src="other/QIDI.png" height="240" alt="QIDI's logo" /></p>
 <p align="center"><a href="/LICENSE"><img alt="GPL-V3.0 License" src="https://github.com/Rainboooom/test/blob/main/qidi.svg"></a></p>
 
 # Document Instructions
