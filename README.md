@@ -1,5 +1,5 @@
 <p align="center"><img src="other/QIDI.png" height="240" alt="QIDI's logo" /></p>
-<p align="center"><a href="/LICENSE"><img alt="GPL-V3.0 License" src="https://github.com/Rainboooom/test/blob/main/qidi.svg"></a></p>
+<p align="center"><a href="/LICENSE"><img alt="GPL-V3.0 License" src="other/qidi.svg"></a></p>
 
 # Document Instructions
 QIDISmart3 is a server-side software that interacts with the screen in the smart3 model system. This document contains our source code, and we provide two ways to update it: one is to download the packaged file to a USB drive and insert it into the machine for updating, and the other is to compile and update it through source code.  
@@ -9,9 +9,13 @@ QIDI provides a packaged version file in the version bar next to it. Please down
 ## Detailed update process
 #### Packaged files
 1. Prepare a blank named USB drive.Please ensure that the device name of the USB drive is empty
+<p align="left"><img src="other/blankname.png" height="360" alt="sample"></p>
 2. Select the latest version in the version release bar next to it, download the compressed file package starting with SMART and extract it locally.
-3. Place the files in the USB drive
-4. Such as
+3. Place the files in the USB drive, such as
+<p align="left"><img src="other/sample.png" height="240" alt="sample"></p>
+4. Insert the USB drive into the machine's USB interface, and an update prompt will appear on the version information interface. Click the update button to restart according to the prompt.
+
+
 #### Compile
 1. Connect machines to the network and connect through SSH
 2. Log in as root.The password is `makerbase`
@@ -41,8 +45,8 @@ Thanks to the developers and maintainers of these open source projects.Please co
 
  Software |  QIDI edition
  ----|----
-**Klipper** | **[link]()**
-**Moonraker** | **[link]()**
+**Klipper** | **[link](https://github.com/QIDITECH/klipper)**
+**Moonraker** | **[link](https://github.com/QIDITECH/moonrake)**
 
 
 
