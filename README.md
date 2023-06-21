@@ -12,7 +12,7 @@ QIDI provides a packaged version file in the version bar next to it. Please down
 
 <p align="left"><img src="other/blankname.png" height="360" alt="sample"></p>
 
-2. Select the latest version in the version release bar next to it, download the compressed file package starting with SMART and extract it locally.<a href="https://github.com/QIDITECH/QIDI_SMART3/releases/tag/Smart_V4.1.0">Jump link </a>
+2. Select the latest version in the version release bar next to it, download the compressed file package starting with SMART and extract it locally.<a href="https://github.com/QIDITECH/QIDI_SMART3/releases">Jump link </a>
 3. Place the files in the USB drive, such as
 
 <p align="left"><img src="other/sample.png" height="240" alt="sample"></p>
