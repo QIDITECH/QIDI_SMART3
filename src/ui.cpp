@@ -307,7 +307,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             break;
 
         case TJC_PAGE_OPEN_AUTO_LEVEL_2_005:
-            set_auto_level_dist(0.005);
+            set_auto_level_dist(0.05);
             //oobe_set_intern_zoffset(0.05);
             break;
         
@@ -955,7 +955,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
                 if (get_filament_detected() == false) {
                     page_to(TJC_PAGE_FILAMENT);
                 }
-            } else if (previous_page_id == TJC_PAGE_PRINT_FILAMENT) {
+            } else { //4.1.2 CLL 防止断料界面卡死
                 page_to(TJC_PAGE_PRINT_FILAMENT);
             }
             break;
@@ -1579,7 +1579,8 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         switch (widget_id)
         {
         case TJC_PAGE_AUTO_FINISH_YES:
-            if (auto_level_button_enabled == true) {
+            //4.1.2 CLL 修复无法完成自动调平
+            if (auto_level_button_enabled == true ||printer_idle_timeout_state == "Idle") {
                 auto_level_button_enabled = false;
                 std::cout << "自动调平已完成" << std::endl;
                 finish_auto_level();

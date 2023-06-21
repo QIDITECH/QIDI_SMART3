@@ -2384,9 +2384,10 @@ void start_manual_level() {
 
 /* 完成自动调平 */
 void finish_auto_level() {
-    if ( auto_level_finished == false ) {
-        //2023.4.24-1 自动调平完成后移动平台
-        ep->Send(json_run_a_gcode("M1029\nSAVE_CONFIG"));
+    //4.1.2 CLL 修复无法完成自动调平
+    if ( auto_level_finished == false || printer_idle_timeout_state == "Idle") {
+        //4.1.2 CLL 自动调平完成后移动平台
+        ep->Send(json_run_a_gcode("G0 Z50 F600\nG1 X0 Y0 G9000\nM1029\nSAVE_CONFIG"));
         //ep->Send(json_run_a_gcode("G0 X0 Y0 Z50 F5000\nM1029\nSAVE_CONFIG"));
         all_level_saving = false;
         page_to(TJC_PAGE_SAVING);
@@ -3677,4 +3678,17 @@ void refresh_page_preview_pop() {
             clear_page_printing_arg();
         }
     }
+}
+
+//4.1.1 CLL 修复无法读取文件名中带空格文件
+std::string replaceCharacters(const std::string& path, const std::string& searchChars, const std::string& replacement) {
+    std::string result = path;
+    for (char c : searchChars) {
+        std::size_t found = result.find(c);
+        while (found != std::string::npos) {
+            result.replace(found, 1, replacement);
+            found = result.find(c, found + replacement.length());
+        }
+    }
+    return result;
 }
