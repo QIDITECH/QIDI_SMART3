@@ -331,6 +331,10 @@ extern bool page_filament_unload_button;
 //1.1.4 CLL 新增打印热床调平
 extern bool printer_bed_leveling;
 
+//4.1.3 CLL 耗材确认弹窗新增不再提示弹窗
+extern bool preview_pop_1_on;
+extern bool preview_pop_2_on;
+
 /* 更新页面处理 */
 void refresh_page_show() {
     // MKSLOG_BLUE("当前的页面id, # %d", current_page_id);
@@ -2356,6 +2360,8 @@ void pre_auto_level_init() {
 void start_auto_level() {
     printer_idle_timeout_state = "Printing";
     if (auto_level_enabled == false) {
+        //4.1.3 CLL 开机引导自动调平前清零 
+        set_mks_babystep("0.000");
         auto_level_finished = false;
         ep->Send(json_run_a_gcode("ACCEPT\n"));    // 先注释掉，看下保存后的效果  
         // ep->Send(json_run_a_gcode("ABORT\n"));
@@ -2937,7 +2943,9 @@ void go_to_network() {
         page_wifi_ssid_list_pages = 0;
         page_wifi_current_pages = 0;
         page_to(TJC_PAGE_WIFI_LIST_2);
+        //4.1.3 CLL 修复WiFi刷新
         get_wlan0_status();
+        scan_ssid_and_show();
         if (strcmp(status_result.wpa_state, "COMPLETED") == 0) {
             current_connected_ssid_name = status_result.ssid;       // 如果已经连接wifi，获取wifi的名字
         } else if (strcmp(status_result.wpa_state, "INACTIVE")) {
@@ -3651,9 +3659,10 @@ void check_filament_type() {
     }
     std::transform(filament_type.begin(), filament_type.end(), filament_type.begin(), tolower);
     MKSLOG_YELLOW("filament_type : %s",filament_type.c_str());
-    if (filament_type.find("pla") != -1 || filament_type.find("petg") != -1) {
+    //4.1.3 CLL 耗材确认弹窗新增不再提示弹窗
+    if ((filament_type.find("pla") != -1 || filament_type.find("petg") != -1) && preview_pop_1_on == true) {
         page_to(TJC_PAGE_PREVIEW_POP_1);
-    }else if (filament_type.find("abs") != -1) {
+    }else if (filament_type.find("abs") != -1 && preview_pop_2_on == true) {
         page_to(TJC_PAGE_PREVIEW_POP_2);
     }else {
         page_to(TJC_PAGE_PRINTING);

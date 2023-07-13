@@ -421,8 +421,11 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                     mks_enable_network();
                 } else if (strstr(buf, "CTRL-EVENT-CONNECTED") != NULL) {
                     MKSLOG_BLUE("已经成功连接上wifi");
+                    //4.1.3 CLL 修复WiFi刷新
+                    mks_enable_network();
+                    usleep(10000);
                     wlan_state_str = "connected";
-                    system("dhcpcd wlan0");
+                    //system("dhcpcd wlan0");
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_SUCCESS);
                     }
@@ -433,7 +436,8 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_FAILED);
                     }
-                } else if (strstr(buf, "CONN_FAILED") != NULL) {
+                //4.1.3 CLL 修复WiFi刷新
+                } else if (strstr(buf, "CONN_FAILED") != NULL || strstr(buf,"timed out") != NULL) {
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_FAILED);
                     }
@@ -450,10 +454,11 @@ void *mks_wifi_hdlevent_thread(void *arg) {
 }
 
 int mks_wpa_scan_scanresults() {
-    // char path[64] = {"\0"};
+    //4.1.3 CLL 修复WiFi刷新
+    char path[64] = {"\0"};
 
-    // sprintf(path, "/var/run/wpa_supplicant/wlan0");
-    // ctrl_conn = wpa_ctrl_open(path);
+    sprintf(path, "/var/run/wpa_supplicant/wlan0");
+    ctrl_conn = wpa_ctrl_open(path);
 
     if (!ctrl_conn) {
         printf("Open wpa control interfaces failed!\n");
@@ -620,15 +625,15 @@ int mks_wifi_connect(char *ssid, char *psk) {
 */
 
 int mks_set_ssid(char *ssid) {
-
-    // char path[64] = {"\0"};
+    //4.1.3 CLL 修复WiFi刷新bug
+    char path[64] = {"\0"};
     char cmd[64];
     char replyBuff[2048] = {"\0"};
     size_t reply_len;
     int ret;
 
-    // sprintf(path, "/var/run/wpa_supplicant/wlan0");
-    // ctrl_conn = wpa_ctrl_open(path);
+    sprintf(path, "/var/run/wpa_supplicant/wlan0");
+    ctrl_conn = wpa_ctrl_open(path);
 
     if (!ctrl_conn) {
         printf("Open wpa control interfaces failed!\n");
@@ -668,6 +673,7 @@ int mks_set_ssid(char *ssid) {
 }
 
 int mks_set_psk(char *psk) {
+    //4.1.3 CLL 修复WiFi刷新bug
     // char path[64] = {"\0"};
     char cmd[64];
     char replyBuff[2048] = {"\0"};
@@ -769,7 +775,8 @@ int mks_disable_network() {
 }
 
 int mks_enable_network() {
-    // char path[64] = {"\0"};
+    //4.1.3 CLL 修复WiFi刷新bug
+    char path[64] = {"\0"};
     char cmd[64];
 
     char replyBuff[4096] = {"\0"};
@@ -862,7 +869,8 @@ int mks_wpa_cli_open_connection() {
 
     ctrl_conn = wpa_ctrl_open(path);
 
-    if (!ctrl_conn) {
+    //4.1.3 CLL 修复WiFi刷新bug
+    if (ctrl_conn) {
         mks_wpa_cli_connected = true;
         MKSLOG_RED("成功连接wpa connection");
         return 0;

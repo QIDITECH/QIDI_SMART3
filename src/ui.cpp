@@ -115,6 +115,10 @@ bool page_filament_unload_button = false;
 //1.1.4 CLL 新增打印热床调平
 bool printer_bed_leveling = true;
 
+//4.1.3 CLL 耗材确认弹窗新增不再提示按钮
+bool preview_pop_1_on = true;
+bool preview_pop_2_on = true;
+
 void parse_cmd_msg_from_tjc_screen(char *cmd) {
     event_id = cmd[0];
     MKSLOG_BLUE("#########################%s", cmd);
@@ -1081,6 +1085,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
                 std::cout << "按下确定键" << std::endl;
                 page_to(TJC_PAGE_MAIN);
             } else if (previous_page_id == TJC_PAGE_PRINTING || current_page_id == TJC_PAGE_PRINT_BABYSTEP || current_page_id == TJC_PAGE_PRINT_FILAMENT) {
+                cancel_print();
                 page_to(TJC_PAGE_MAIN);
             } else {
                 std::cout << "TJC_PAGE_POP_2_YES" << std::endl;
@@ -1741,11 +1746,10 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         case TJC_PAGE_WIFI_LIST_2_REFRESH:
             std::cout << "################## 按下刷新按钮" << std::endl;
             scan_ssid_and_show();
-            //1.1.4 CLL 修复wifi页面bug
-            std::cout << "等待延时测试3s..." << std::endl;
-            sleep(3);
-            scan_ssid_and_show();
-            break;
+            //4.1.3 CLL 修复WiFi刷新bug
+            //std::cout << "等待延时测试3s..." << std::endl;
+            //sleep(3);
+            //scan_ssid_and_show();
             break;
 
         case TJC_PAGE_WIFI_LIST_2_BACK:
@@ -2164,13 +2168,15 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             // if (start_to_printing == false) {
                 // start_to_printing = true;
                 page_to(TJC_PAGE_PRINT_STOPING);
+                //4.1.3 CLL 修复在暂停界面停止打印后返回主界面仍显示加热
+                printer_idle_timeout_state = "Printing";
                 cancel_print();
                 // get_total_time();
             // }
             break;
 
         case TJC_PAGE_PRINT_STOP_NO:
-            page_to(TJC_PAGE_PRINTING);
+            page_to(previous_page_id);
             break;
 
         default:
@@ -2316,6 +2322,10 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         {
         case TJC_PAGE_WIFI_SUCCESS_YES:
             wifi_save_config();
+        //4.1.3 CLL 修复WiFi刷新bug
+	    	mks_wpa_cli_close_connection();
+            go_to_network();
+            scan_ssid_and_show();
             break;
 
         default:
@@ -2327,7 +2337,11 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         switch (widget_id)
         {
         case TJC_PAGE_WIFI_FAILED_YES:
-            page_to(TJC_PAGE_WIFI_LIST_2);
+	    	//4.1.3 CLL 修复WiFi刷新bug
+            //page_to(TJC_PAGE_WIFI_LIST_2);
+            mks_wpa_cli_close_connection();
+			go_to_network();
+			scan_ssid_and_show();
             break;
 
         default:
@@ -2374,6 +2388,9 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         case TJC_PAGE_WIFI_KEYBOARD_BACK:
             page_to(TJC_PAGE_WIFI_LIST_2);
             printing_wifi_keyboard_enabled = false;
+            //4.1.3 CLL 修复WiFi刷新bug
+			set_page_wifi_ssid_list(page_wifi_current_pages);
+            refresh_page_wifi_list();
             break;
 
         case TJC_PAGE_WIFI_KEYBOARD_ENTER:
@@ -2447,7 +2464,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         {
         case TJC_PAGE_ZOFFSET_YES:
             page_to(TJC_PAGE_LEVEL_MODE_1);
-            break;        
+            break;
         
         default:
             break;
@@ -2545,20 +2562,6 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         }
         break;
 
-    //2023.5.6 CLL 跳转页面后自动清除原数据
-    case TJC_PAGE_PRINT_STOPING:
-        switch(widget_id)
-        {
-        case TJC_PAGE_PRINT_STOPING_INIT:
-            clear_previous_data();
-            sleep(5);
-            break;
-        
-        default:
-            break;
-        }
-        break;
-
     //2023.5.8 开机引导新增界面
     case TJC_PAGE_OPEN_VIDEO_4:
         switch(widget_id)
@@ -2645,24 +2648,23 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
 
     //1.1.6 CLL 打印前判断耗材种类并弹窗
     case TJC_PAGE_PREVIEW_POP_1:
-        switch(widget_id)
-        {
-        case TJC_PAGE_PREVIEW_POP_1_YES:
-            page_to(TJC_PAGE_PRINTING);
-            break;
-        
-        default:
-            break;
-        }
-        break;
-
     case TJC_PAGE_PREVIEW_POP_2:
         switch (widget_id)
         {
-        case TJC_PAGE_PREVIEW_POP_2_YES:
+        case TJC_PAGE_PREVIEW_POP_YES:
             page_to(TJC_PAGE_PRINTING);
             break;
         
+        //4.1.3 CLL 耗材确认弹窗新增不再提示按钮
+        case TJC_PAGE_PREVIEW_POP_NO_POP:
+            if (current_page_id == TJC_PAGE_PREVIEW_POP_1){
+                preview_pop_1_on = false;
+            } else if (current_page_id == TJC_PAGE_PREVIEW_POP_2) {
+                preview_pop_2_on = false;
+            }
+            page_to(TJC_PAGE_PRINTING);
+            break;
+
         default:
             break;
         }
