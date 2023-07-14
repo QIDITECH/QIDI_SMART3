@@ -472,7 +472,8 @@ int mks_wpa_scan_scanresults() {
 
     int ret;
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, "SCAN", strlen("SCAN"), replyBuff, &reply_len, wpa_cli_msg_cb);
+	//pwtest:
+    ret = wpa_ctrl_request(ctrl_conn, "SCAN", strlen("SCAN"), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         printf("Command timed out.\n");
         // wpa_ctrl_close(ctrl_conn);
@@ -648,7 +649,8 @@ int mks_set_ssid(char *ssid) {
     MKSLOG_RED("发送cmd命令为: %s", cmd);
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+	//pwtest:
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         MKSLOG_RED("Command timed out.");
         // wpa_ctrl_close(ctrl_conn);
@@ -699,7 +701,8 @@ int mks_set_psk(char *psk) {
     // memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
     // ret = wpa_ctrl_request(ctrl_conn, "SET_NETWORK 0 psk \"makerbase318\"", strlen("SET_NETWORK 0 psk \"makerbase318\""), replyBuff, &reply_len, wpa_cli_msg_cb);
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+	//pwtest:
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == 0) {
         replyBuff[reply_len] = '\0';
         MKSLOG_YELLOW("返回的消息: %s", replyBuff);
@@ -798,7 +801,8 @@ int mks_enable_network() {
     snprintf(cmd, sizeof(cmd) - 1, "ENABLE_NETWORK 0");
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+	//pwtest:
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         MKSLOG_RED("Command timed out.");
         // wpa_ctrl_close(ctrl_conn);
@@ -833,7 +837,8 @@ int mks_save_config() {
     sprintf(cmd, "SAVE_CONFIG");
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+	//pwtest:
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         MKSLOG_RED("Command timed out.");
         // wpa_ctrl_close(ctrl_conn);
@@ -959,7 +964,8 @@ int mks_wpa_get_status() {
 
     int ret;
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, "STATUS", strlen("STATUS"), replyBuff, &reply_len, wpa_cli_msg_cb);
+	//pwtest:
+    ret = wpa_ctrl_request(ctrl_conn, "STATUS", strlen("STATUS"), replyBuff, &reply_len, NULL);
 
     if (ret == -2) {
         printf("Command timed out.\n");
