@@ -2323,7 +2323,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         case TJC_PAGE_WIFI_SUCCESS_YES:
             wifi_save_config();
         //4.1.3 CLL 修复WiFi刷新bug
-	    	mks_wpa_cli_close_connection();
+	    mks_wpa_cli_close_connection();
             go_to_network();
             scan_ssid_and_show();
             break;
@@ -2337,13 +2337,12 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         switch (widget_id)
         {
         case TJC_PAGE_WIFI_FAILED_YES:
-	    	//4.1.3 CLL 修复WiFi刷新bug
+	    //4.1.3 CLL 修复WiFi刷新bug
             //page_to(TJC_PAGE_WIFI_LIST_2);
             mks_wpa_cli_close_connection();
-			go_to_network();
-			scan_ssid_and_show();
+	    go_to_network();
+	    scan_ssid_and_show();
             break;
-
         default:
             break;
         }
@@ -2389,7 +2388,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             page_to(TJC_PAGE_WIFI_LIST_2);
             printing_wifi_keyboard_enabled = false;
             //4.1.3 CLL 修复WiFi刷新bug
-			set_page_wifi_ssid_list(page_wifi_current_pages);
+	    set_page_wifi_ssid_list(page_wifi_current_pages);
             refresh_page_wifi_list();
             break;
 
