@@ -261,6 +261,8 @@
 #define TJC_PAGE_LEVEL_MODE_1_NEXT                  0x0a
 #define TJC_PAGE_LEVEL_MODE_1_ZOFFSET               0x00
 #define TJC_PAGE_LEVEL_MODE_1_SYNTONY               0x09
+//4.1.5 CLL 新增设置zoffset界面
+#define TJC_PAGE_LEVEL_MODE_1_SET_ZOFFSET           0x0b
 
 #define TJC_PAGE_LEVEL_MODE_2                       40
 #define TJC_PAGE_LEVEL_MODE_2_BTN_HOME              0x03
@@ -504,6 +506,20 @@
 //4.1.3 CLL 耗材确认弹窗新增不再提示按钮
 #define TJC_PAGE_PREVIEW_POP_NO_POP          0x01
 
+//4.1.5 CLL 新增息屏功能
+#define TJC_PAGE_SCREEN_SLEEP                108
+#define TJC_PAGE_SCREEN_SLEEP_ENTER          0x00
+#define TJC_PAGE_SCREEN_SLEEP_EXIT           0x01
+
+//4.1.5 CLL 新增设置zoffset界面
+#define TJC_PAGE_SET_ZOFFSET                 109
+#define TJC_PAGE_SET_ZOFFSET_UP              0x00
+#define TJC_PAGE_SET_ZOFFSET_DOWN            0x01
+#define TJC_PAGE_SET_ZOFFSET_NEXT            0x02
+#define TJC_PAGE_SET_ZOFFSET_001             0x03
+#define TJC_PAGE_SET_ZOFFSET_005             0x04
+#define TJC_PAGE_SET_ZOFFSET_01              0x05
+#define TJC_PAGE_SET_ZOFFSET_1               0x06
 
 void parse_cmd_msg_from_tjc_screen(char *cmd);
 void page_to(int page_id);

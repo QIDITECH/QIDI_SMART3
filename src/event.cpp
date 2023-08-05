@@ -311,7 +311,7 @@ std::string temp_idle_state = "";
 extern float oobe_printer_set_offset;
 
 //2023.4.24-2 实现打印过文件标红
-extern std::string printed_file_path;
+//extern std::string printed_file_path;
 
 //2023.4.28 使网页打印显示预览图
 bool jump_to_print = false;
@@ -334,6 +334,15 @@ extern bool printer_bed_leveling;
 //4.1.3 CLL 耗材确认弹窗新增不再提示弹窗
 extern bool preview_pop_1_on;
 extern bool preview_pop_2_on;
+
+//4.1.4 CLL 修复断料检测与退料冲突bug
+bool previous_filament_sensor_state = false;
+
+//4.1.4 CLL 修改调平
+std::string previous_zoffset;
+
+//4.1.5 CLL 新增息屏功能
+extern bool previous_caselight_value;
 
 /* 更新页面处理 */
 void refresh_page_show() {
@@ -379,6 +388,11 @@ void refresh_page_show() {
             if (printer_print_stats_state == "printing") {
                 if (printer_print_stats_filename != "") {
                     MKSLOG_BLUE("跳入到打印函数\n");
+                    //4.1.5 CLL 新增息屏功能
+                    if (previous_caselight_value == true) {
+                        led_on_off();
+                        previous_caselight_value = false;
+                    }
                     print_start();  //2023.5.8 CLL 打印前发送"PRINT_START"指令
                     if (level_mode_printing_is_printing_level == false) {
                         printer_ready = false;
@@ -430,6 +444,11 @@ void refresh_page_show() {
         default:
             // 喷头板断开的情况下跳到重启页面
             if (printer_webhooks_state == "shutdown" || printer_webhooks_state == "error") {
+                //4.1.5 CLL 新增息屏功能
+                if (previous_caselight_value == true) {
+                    led_on_off();
+                    previous_caselight_value = false;
+                }
                 page_to(TJC_PAGE_RESET);
                 std::cout << "重启页面" << std::endl;
                 // sleep(1);
@@ -703,6 +722,10 @@ void refresh_page_show() {
         refresh_page_preview_pop();
         break;
 
+    //4.1.5 CLL 新增设置zoffset界面
+    case TJC_PAGE_SET_ZOFFSET:
+        refresh_page_set_zoffset();
+        break;
 
     default:
         break;
@@ -1102,27 +1125,44 @@ void refresh_page_about() {
     }
 }
 
+//4.1.5 CLL 优化UI界面按钮显示
 void refresh_page_auto_level() {
     if (auto_level_dist == (float)0.01) {
         send_cmd_picc(tty_fd, "b3", "103");
+        send_cmd_picc2(tty_fd, "b3", "105");
         send_cmd_picc(tty_fd, "b4", "104");
+        send_cmd_picc2(tty_fd, "b4", "106");
         send_cmd_picc(tty_fd, "b5", "104");
+        send_cmd_picc2(tty_fd, "b5", "106");
         send_cmd_picc(tty_fd, "b6", "104");
+        send_cmd_picc2(tty_fd, "b6", "106");
     } else if (auto_level_dist == (float)0.05) {
         send_cmd_picc(tty_fd, "b3", "104");
+        send_cmd_picc2(tty_fd, "b3", "106");
         send_cmd_picc(tty_fd, "b4", "103");
+        send_cmd_picc2(tty_fd, "b4", "105");
         send_cmd_picc(tty_fd, "b5", "104");
+        send_cmd_picc2(tty_fd, "b5", "106");
         send_cmd_picc(tty_fd, "b6", "104");
+        send_cmd_picc2(tty_fd, "b6", "106");
     } else if (auto_level_dist == (float)0.1) {
         send_cmd_picc(tty_fd, "b3", "104");
+        send_cmd_picc2(tty_fd, "b3", "106");
         send_cmd_picc(tty_fd, "b4", "104");
+        send_cmd_picc2(tty_fd, "b4", "106");
         send_cmd_picc(tty_fd, "b5", "103");
+        send_cmd_picc2(tty_fd, "b5", "105");
         send_cmd_picc(tty_fd, "b6", "104");
+        send_cmd_picc2(tty_fd, "b6", "106");
     } else if (auto_level_dist == (float)1) {
         send_cmd_picc(tty_fd, "b3", "104");
+        send_cmd_picc2(tty_fd, "b3", "106");
         send_cmd_picc(tty_fd, "b4", "104");
+        send_cmd_picc2(tty_fd, "b4", "106");
         send_cmd_picc(tty_fd, "b5", "104");
+        send_cmd_picc2(tty_fd, "b5", "106");
         send_cmd_picc(tty_fd, "b6", "103");
+        send_cmd_picc2(tty_fd, "b6", "105");
     }
 }
 
@@ -1154,48 +1194,45 @@ void refresh_page_manual_move_2() {
     }
 }
 
+//4.1.5 CLL 新增设置zoffset界面
 void refresh_page_set_zoffset() {
-    if (fresh_page_set_zoffset_data == false) {
-        std::string temp[16];
-        for (int i = 0; i < 16; i++) {
-            temp[i] = std::to_string(page_set_zoffset_z_position[i]);
-            temp[i] = temp[i].substr(0, temp[i].find(".") + 4);
-        }
-        /*
-        send_cmd_txt(tty_fd, "b1", std::to_string(page_set_zoffset_z_position[0]));
-        send_cmd_txt(tty_fd, "b2", std::to_string(page_set_zoffset_z_position[1]));
-        send_cmd_txt(tty_fd, "b3", std::to_string(page_set_zoffset_z_position[2]));
-        send_cmd_txt(tty_fd, "b4", std::to_string(page_set_zoffset_z_position[3]));
-        send_cmd_txt(tty_fd, "b5", std::to_string(page_set_zoffset_z_position[4]));
-        send_cmd_txt(tty_fd, "b6", std::to_string(page_set_zoffset_z_position[5]));
-        send_cmd_txt(tty_fd, "b7", std::to_string(page_set_zoffset_z_position[6]));
-        send_cmd_txt(tty_fd, "b8", std::to_string(page_set_zoffset_z_position[7]));
-        send_cmd_txt(tty_fd, "b9", std::to_string(page_set_zoffset_z_position[8]));
-        send_cmd_txt(tty_fd, "b10", std::to_string(page_set_zoffset_z_position[9]));
-        send_cmd_txt(tty_fd, "b15", std::to_string(page_set_zoffset_z_position[10]));
-        send_cmd_txt(tty_fd, "b16", std::to_string(page_set_zoffset_z_position[11]));
-        send_cmd_txt(tty_fd, "b18", std::to_string(page_set_zoffset_z_position[12]));
-        send_cmd_txt(tty_fd, "b19", std::to_string(page_set_zoffset_z_position[13]));
-        send_cmd_txt(tty_fd, "b20", std::to_string(page_set_zoffset_z_position[14]));
-        send_cmd_txt(tty_fd, "b21", std::to_string(page_set_zoffset_z_position[15]));
-        */
-        send_cmd_txt(tty_fd, "b1", temp[0]);
-        send_cmd_txt(tty_fd, "b2", temp[1]);
-        send_cmd_txt(tty_fd, "b3", temp[2]);
-        send_cmd_txt(tty_fd, "b4", temp[3]);
-        send_cmd_txt(tty_fd, "b5", temp[4]);
-        send_cmd_txt(tty_fd, "b6", temp[5]);
-        send_cmd_txt(tty_fd, "b7", temp[6]);
-        send_cmd_txt(tty_fd, "b8", temp[7]);
-        send_cmd_txt(tty_fd, "b9", temp[8]);
-        send_cmd_txt(tty_fd, "b10", temp[9]);
-        send_cmd_txt(tty_fd, "b15", temp[10]);
-        send_cmd_txt(tty_fd, "b16", temp[11]);
-        send_cmd_txt(tty_fd, "b18", temp[12]);
-        send_cmd_txt(tty_fd, "b19", temp[13]);
-        send_cmd_txt(tty_fd, "b20", temp[14]);
-        send_cmd_txt(tty_fd, "b21", temp[15]);
-        fresh_page_set_zoffset_data = true;
+    send_cmd_txt(tty_fd, "t2", std::to_string(printer_gcode_move_homing_origin[2]).substr(0,5) + "mm");
+    if (auto_level_dist == (float)0.01) {
+        send_cmd_picc(tty_fd, "b3", "98");
+        send_cmd_picc2(tty_fd, "b3", "100");
+        send_cmd_picc(tty_fd, "b4", "99");
+        send_cmd_picc2(tty_fd, "b4", "101");
+        send_cmd_picc(tty_fd, "b5", "99");
+        send_cmd_picc2(tty_fd, "b5", "101");
+        send_cmd_picc(tty_fd, "b6", "99");
+        send_cmd_picc2(tty_fd, "b6", "101");
+    } else if (auto_level_dist == (float)0.05) {
+        send_cmd_picc(tty_fd, "b3", "99");
+        send_cmd_picc2(tty_fd, "b3", "101");
+        send_cmd_picc(tty_fd, "b4", "98");
+        send_cmd_picc2(tty_fd, "b4", "100");
+        send_cmd_picc(tty_fd, "b5", "99");
+        send_cmd_picc2(tty_fd, "b5", "101");
+        send_cmd_picc(tty_fd, "b6", "99");
+        send_cmd_picc2(tty_fd, "b6", "101");
+    } else if (auto_level_dist == (float)0.1) {
+        send_cmd_picc(tty_fd, "b3", "99");
+        send_cmd_picc2(tty_fd, "b3", "101");
+        send_cmd_picc(tty_fd, "b4", "99");
+        send_cmd_picc2(tty_fd, "b4", "101");
+        send_cmd_picc(tty_fd, "b5", "98");
+        send_cmd_picc2(tty_fd, "b5", "100");
+        send_cmd_picc(tty_fd, "b6", "99");
+        send_cmd_picc2(tty_fd, "b6", "101");
+    } else if (auto_level_dist == (float)1) {
+        send_cmd_picc(tty_fd, "b3", "99");
+        send_cmd_picc2(tty_fd, "b3", "101");
+        send_cmd_picc(tty_fd, "b4", "99");
+        send_cmd_picc2(tty_fd, "b4", "101");
+        send_cmd_picc(tty_fd, "b5", "99");
+        send_cmd_picc2(tty_fd, "b5", "101");
+        send_cmd_picc(tty_fd, "b6", "98");
+        send_cmd_picc2(tty_fd, "b6", "100");
     }
 }
 
@@ -1507,11 +1544,11 @@ void refresh_page_leveling_init() {
             page_to(TJC_PAGE_MANUAL_LEVEL);
             start_pre_manual_level = false;
             break;
-        /*
+
+        //4.1.5 CLL 新增设置zoffset界面
         case TJC_PAGE_SET_ZOFFSET:
             page_to(TJC_PAGE_SET_ZOFFSET);
             break;
-        */
         
         default:
             break;
@@ -1871,8 +1908,9 @@ void refresh_page_preview() {
     }
     if (mks_file_parse_finished == true) {
     if (show_preview_complete == false) {
-
-        send_cmd_txt(tty_fd, "t0", file_metadata_filename);
+        //4.1.5 CLL 修改当前在预览图界面仅能看到文件名称
+        std::string file_name = file_metadata_filename.substr(file_metadata_filename.rfind("/") + 1);
+        send_cmd_txt(tty_fd, "t0", file_name);
 
         if (file_metadata_estimated_time) {
             send_cmd_txt(tty_fd, "t1", show_time(file_metadata_estimated_time));
@@ -1970,7 +2008,7 @@ void refresh_page_preview() {
         show_preview_complete = true;
         if (jump_to_print == true) {
             //1.1.4 CLL 新增网页打印过文件标红
-            printed_file_path = "/" + printer_print_stats_filename;
+            //printed_file_path = "/" + printer_print_stats_filename;
             //1.1.4 CLL 新增打印热床调平
             bed_leveling_switch(true);
             jump_to_print = false;
@@ -2018,13 +2056,20 @@ void refresh_page_main() {
 void refresh_page_files_list_1() {
     for (int i = 0; i < 6; i++) {
         //2023.4.24-2 实现打印过文件标红
+        /*
         if (printed_file_path == page_files_path + "/" + page_files_list_show_name[i]) {
             send_cmd_pco(tty_fd, "t" + std::to_string(i), "63488");
         }else {
             send_cmd_pco(tty_fd, "t" + std::to_string(i), "65535");
         }
+        */
 
         send_cmd_txt(tty_fd, "t" + std::to_string(i), page_files_list_show_name[i]);
+        //4.1.5 CLL 新增打印过文件会在文件列表第一页首个显示
+        if (page_files_list_show_type[i] =="[c]") {
+            send_cmd_picc(tty_fd, "b" + std::to_string(i+7), "228");
+            send_cmd_picc2(tty_fd, "b" + std::to_string(i+7), "227");
+        }
         if (page_files_list_show_type[i] == "[d]") {
             send_cmd_picc(tty_fd, "b" + std::to_string(i+7), std::to_string(44));
             send_cmd_picc2(tty_fd, "b" + std::to_string(i+7), std::to_string(46));
@@ -2055,11 +2100,13 @@ void refresh_page_files_list_1() {
 void refresh_page_files_list_2() {
     for (int i = 0; i < 6; i++) {
         //2023.4.24-2 实现打印过文件标红
+        /*
         if (printed_file_path == page_files_path + "/" + page_files_list_show_name[i]) {
             send_cmd_pco(tty_fd, "t" + std::to_string(i), "63488");
         }else {
             send_cmd_pco(tty_fd, "t" + std::to_string(i), "65535");
         }
+        */
 
         send_cmd_txt(tty_fd, "t" + std::to_string(i), page_files_list_show_name[i]);
         if (page_files_list_show_type[i] == "[d]") {
@@ -2333,10 +2380,11 @@ void set_auto_level_dist(float dist) {
     auto_level_dist = dist;
 }
 
+//4.1.4 CLL 修改调平
 void pre_auto_level_init() {
     page_to(TJC_PAGE_LEVEL_INIT_2);
     std::cout << "然后进入到这里" << std::endl;
-    set_mks_babystep("0.000");                  // 自动调平前清零
+    //set_mks_babystep("0.000");                  // 自动调平前清零
     auto_level_dist = 0.05;                     // 自动调平默认选为0.05  20230207 kenneth.lin
     send_var_value(tty_fd, "auto_level_step", 2);
     auto_level_finished = false;
@@ -2354,17 +2402,27 @@ void pre_auto_level_init() {
     //int ytemp = printer_toolhead_axis_maximum[1] / 2 - printer_probe_y_zoffset;     // 直接用最大量程除以2
     // ep->Send(json_run_a_gcode("G28\nG1 X" + std::to_string(xtemp) + " Y" + std::to_string(ytemp) + "\nABORT\nPROBE_CALIBRATE\nTESTZ Z=-2\n"));
     //ep->Send(json_run_a_gcode("G28\nG1 X" + std::to_string(xtemp) + " Y" + std::to_string(ytemp) + "F3600\nG1 Z15 F1200\nABORT\nPROBE_CALIBRATE\nTESTZ Z=-3.0\n"));
-    ep->Send(json_run_a_gcode("M4029"));
+    get_mks_babystep();
+    previous_zoffset = mks_babystep_value;
+    float z;
+    z = std::stof(previous_zoffset);
+    z = z + 0.15;
+    previous_zoffset = std::to_string(z);
+    ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z=0 MOVE=0\n"));
+    ep->Send(json_run_a_gcode("M4029\n"));
+    ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z=" + previous_zoffset + " MOVE=1\n"));
 }
 
+//4.1.4 CLL 修改调平
 void start_auto_level() {
     printer_idle_timeout_state = "Printing";
     if (auto_level_enabled == false) {
         //4.1.3 CLL 开机引导自动调平前清零 
-        set_mks_babystep("0.000");
+        //set_mks_babystep("0.000");
         auto_level_finished = false;
-        ep->Send(json_run_a_gcode("ACCEPT\n"));    // 先注释掉，看下保存后的效果  
+        //ep->Send(json_run_a_gcode("ACCEPT\n"));    // 先注释掉，看下保存后的效果  
         // ep->Send(json_run_a_gcode("ABORT\n"));
+        ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z=0 MOVE=1\n"));
         ep->Send(json_run_a_gcode("BED_MESH_CALIBRATE\n"));
         //2023.4.29 修改调平流程
         ep->Send(json_run_a_gcode("G0 X0 Y0 Z50 F5000\n"));
@@ -2550,11 +2608,14 @@ void pre_set_zoffset_init() {
     ep->Send(json_run_a_gcode("G1 X" + std::to_string(xtemp) + " Y" + std::to_string(ytemp) + "F3600\nG1 Z0 F1200\n"));
 }
 
+//4.1.4 CLL 修改调平
 void start_auto_level_dist(bool positive) {
     if (positive == true) {
-        ep->Send(json_run_a_gcode("TESTZ Z=" + std::to_string(auto_level_dist)));
+        //ep->Send(json_run_a_gcode("TESTZ Z=" + std::to_string(auto_level_dist)));
+        ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z_ADJUST=" + std::to_string(auto_level_dist) + " MOVE=1"));
     } else {
-        ep->Send(json_run_a_gcode("TESTZ Z=-" + std::to_string(auto_level_dist)));
+        //ep->Send(json_run_a_gcode("TESTZ Z=-" + std::to_string(auto_level_dist)));
+        ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z_ADJUST=-" + std::to_string(auto_level_dist) + " MOVE=1"));
     }
 }
 
@@ -3287,6 +3348,12 @@ void filament_unload() {
     //2023.4.28 修改自动退料操作
     //ep->Send(json_run_a_gcode("M84\nM109 T0 S230\nM83\nG1 E-30 F300\n"));           // 退料先解锁电机
     ep->Send(json_run_a_gcode("M603"));
+
+    //4.1.4 CLL 修复断料检测与退料冲突bug
+    if (previous_filament_sensor_state == true) {
+        set_filament_sensor();
+        previous_filament_sensor_state = false;
+    }
 }
 
 int get_cal_printed_time(int print_time) {
@@ -3398,12 +3465,13 @@ void open_start_extrude() {
     ep->Send(json_run_a_gcode("M83\nG1 E20 F300\n"));
 }
 
+//4.1.4 CLL 修改调平
 void pre_open_auto_level_init() {
-    set_mks_babystep("0.000");
+    //set_mks_babystep("0.000");
     if (start_pre_auto_level == false) {
         printer_idle_timeout_state = "Printing";
     }
-    set_mks_babystep("0.000");                  // 自动调平前清零
+    //set_mks_babystep("0.000");                  // 自动调平前清零
     auto_level_dist = 0.05;                     // 自动调平默认选为0.05  20230207 kenneth.lin
     send_var_value(tty_fd, "auto_level_step", 2);
     auto_level_finished = false;
@@ -3415,7 +3483,16 @@ void pre_open_auto_level_init() {
     //2023.4.28 修改开机调平初始化
     //ep->Send(json_run_a_gcode("G28\nG1 X90 Y90 Z0.2\n"));
     //ep->Send(json_run_a_gcode("G0 X0 Y0 Z50 F6000\n"));
-    ep->Send(json_run_a_gcode("M4029"));
+    get_mks_babystep();
+    previous_zoffset = mks_babystep_value;
+    float z;
+    z = std::stof(previous_zoffset);
+    z = z + 0.15;
+    previous_zoffset = std::to_string(z);
+    ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z=0 MOVE=0\n"));
+    ep->Send(json_run_a_gcode("M4029\n"));
+    //ep->Send(json_run_a_gcode("G0 Z0\n"));
+    ep->Send(json_run_a_gcode("SET_GCODE_OFFSET Z=" + previous_zoffset + " MOVE=1\n"));
 }
 
 
@@ -3565,12 +3642,25 @@ void set_auto_level_heater_bed_target(bool positive) {
 
 //2023.5.6 CLL 新增报错跳转页面
 void detect_error() {
-    if (current_page_id != TJC_PAGE_PRINTING && current_page_id != TJC_PAGE_PRINT_BABYSTEP && current_page_id != TJC_PAGE_PRINT_FILAMENT && current_page_id != TJC_PAGE_GCODE_ERROR)
-    {   
+    switch (current_page_id)
+    {
+    case TJC_PAGE_PRINTING:
+    case TJC_PAGE_PRINT_BABYSTEP:
+    case TJC_PAGE_PRINT_FILAMENT:
+    case TJC_PAGE_GCODE_ERROR:
+        break;
+    
+    default:
         if (printer_webhooks_state != "shutdown" && printer_webhooks_state != "error") {
+            //4.1.5 新增息屏功能
+            if (previous_caselight_value == true) {
+                led_on_off();
+                previous_caselight_value = false;
+            }
             page_to(TJC_PAGE_DETECT_ERROR);
             send_cmd_txt(tty_fd, "t0", output_console);
         }
+        break;
     }
 }
 
@@ -3632,13 +3722,45 @@ void bed_leveling_switch(bool positive) {
     }
 }
 
-//1.1.5 CLL 在打印结束或取消时保存zoffset值
+//4.1.4 CLL 修改调平
 void save_current_zoffset() {
     std::string z_offset = std::to_string(printer_gcode_move_homing_origin[2]);
     z_offset = z_offset.substr(0, z_offset.find(".") + 4);
-    if (z_offset != mks_babystep_value && z_offset.find("0.000") != -1) {
+    switch (current_page_id)
+    {
+    case TJC_PAGE_AUTO_LEVELING:
+    case TJC_PAGE_OPEN_LEVELING:
+        printer_idle_timeout_state = "Printing";
+        float z;
+        z = std::stof(z_offset);
+        z = z - 0.15;
+        z_offset = std::to_string(z);
         mks_babystep_value = z_offset;
         set_mks_babystep(mks_babystep_value);
+        MKSLOG_RED("当前zoffset值保存为%s",mks_babystep_value.c_str());
+        break;
+
+    //4.1.5 CLL 新增设置zoffset界面
+    case TJC_PAGE_SET_ZOFFSET:
+        printer_idle_timeout_state = "Printing";
+        page_to(TJC_PAGE_SAVING);
+        z = std::stof(z_offset);
+        z = z - 0.15;
+        z_offset = std::to_string(z);
+        mks_babystep_value = z_offset;
+        set_mks_babystep(mks_babystep_value);
+        MKSLOG_RED("当前zoffset值保存为%s",mks_babystep_value.c_str());
+        ep->Send(json_run_a_gcode("G0 X0 Y0 Z50 F5000\n"));
+        ep->Send(json_run_a_gcode("SAVE_CONFIG\n"));
+        break;
+    
+    default:
+        if (z_offset != mks_babystep_value && z_offset.find("0.000") != -1) {
+            mks_babystep_value = z_offset;
+            set_mks_babystep(mks_babystep_value);
+            MKSLOG_RED("当前zoffset值保存为:%s",mks_babystep_value.c_str());
+        }
+        break;
     }
 }
 

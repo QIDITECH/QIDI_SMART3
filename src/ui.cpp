@@ -98,7 +98,7 @@ bool page_filament_extrude_button = false;
 extern bool mks_file_parse_finished;
 
 //2023.4.24-2 实现过打印文件标红
-std::string printed_file_path;
+//std::string printed_file_path;
 
 //2023.4.28 修改退料流程
 extern int printer_extruder_temperature;
@@ -118,6 +118,14 @@ bool printer_bed_leveling = true;
 //4.1.3 CLL 耗材确认弹窗新增不再提示按钮
 bool preview_pop_1_on = true;
 bool preview_pop_2_on = true;
+
+//4.1.4 CLL 修复断料检测与退料冲突bug
+extern bool filament_switch_sensor_fila_enabled;
+extern bool previous_filament_sensor_state;
+
+//4.1.5 CLL 新增息屏功能
+bool previous_caselight_value = false;
+extern float printer_caselight_value;
 
 void parse_cmd_msg_from_tjc_screen(char *cmd) {
     event_id = cmd[0];
@@ -336,9 +344,13 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             break;
         
         case TJC_PAGE_OPEN_AUTO_LEVEL_ENTER:
-            start_auto_level();
-            page_to(TJC_PAGE_OPEN_LEVELING);
-            //open_go_to_syntony_move();
+            if (printer_idle_timeout_state != "Printing") {
+                page_to(TJC_PAGE_OPEN_LEVELING);
+                //4.1.4 CLL 修改调平
+                save_current_zoffset();
+                start_auto_level();
+                //open_go_to_syntony_move();
+            }
             break;
 
         default:
@@ -699,7 +711,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
                     if (get_filament_detected_enable() == true) {
                         if (get_filament_detected() == true) {
                             //2023.4.24-2 实现打印过文件标红
-                            printed_file_path = page_files_print_files_path;
+                            //printed_file_path = page_files_print_files_path;
                             // printer_print_stats_state = "Printing";
                             std::cout << "没有检测到断料" << std::endl;
                             //1.1.6 CLL 打印前判断耗材种类并弹窗
@@ -714,7 +726,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
                         }
                     } else {
                         //2023.4.24-2 实现打印过文件标红
-                        printed_file_path = page_files_print_files_path;
+                        //printed_file_path = page_files_print_files_path;
                         //1.1.6 CLL 打印前判断耗材种类并弹窗
                         check_filament_type();
                         //page_to(TJC_PAGE_PRINTING);
@@ -1166,6 +1178,13 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             go_to_syntony_move();
             break;
 
+        //4.1.5 CLL 新增设置zoffset界面
+        case TJC_PAGE_LEVEL_MODE_1_SET_ZOFFSET:
+            level_mode = TJC_PAGE_SET_ZOFFSET;
+            printer_idle_timeout_state = "Printing";
+            pre_auto_level_init();
+            break;
+
         default:
             break;
         }
@@ -1313,6 +1332,12 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             if ((printer_extruder_temperature >= (printer_extruder_target - 5))&&(printer_extruder_temperature <= (printer_extruder_target + 5))) {
                 //2023.5.12 新增退料完成页面
                 page_filament_unload_button = true;
+                
+                //4.1.4 CLL 修复断料检测与退料冲突bug
+                if (filament_switch_sensor_fila_enabled == 1) {
+                    previous_filament_sensor_state = true;
+                    set_filament_sensor();
+                }
                 page_to(TJC_PAGE_FILAMENT_POP_4);
             }else {
                 page_to(TJC_PAGE_FILAMENT_POP);
@@ -1571,8 +1596,12 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             break;
 
         case TJC_PAGE_AUTO_LEVEL_ENTER:
-            page_to(TJC_PAGE_AUTO_LEVELING);
-            start_auto_level();
+            if (printer_idle_timeout_state != "Printing") {
+                page_to(TJC_PAGE_AUTO_LEVELING);
+                //4.1.4 CLL 修改调平
+                save_current_zoffset();
+                start_auto_level();
+            }
             break;
 
         default:
@@ -2150,12 +2179,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         case TJC_PAGE_PRINT_FINISH_YES:
             page_to(TJC_PAGE_MAIN);
             break;
-        
-        case TJC_PAGE_PRINT_FINISH_INIT:
-            clear_previous_data(); //2023.5.4 CLL 清除原数据
-            sleep(5);
-            break;
-
+            
         default:
             break;
         }
@@ -2322,8 +2346,10 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         {
         case TJC_PAGE_WIFI_SUCCESS_YES:
             wifi_save_config();
-        //4.1.3 CLL 修复WiFi刷新bug
-	    mks_wpa_cli_close_connection();
+            //4.1.4 CLL 修复WiFi
+            system("dhcpcd wlan0");
+            //4.1.3 CLL 修复WiFi刷新bug
+	    	mks_wpa_cli_close_connection();
             go_to_network();
             scan_ssid_and_show();
             break;
@@ -2337,12 +2363,13 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         switch (widget_id)
         {
         case TJC_PAGE_WIFI_FAILED_YES:
-	    //4.1.3 CLL 修复WiFi刷新bug
+	    	//4.1.3 CLL 修复WiFi刷新bug
             //page_to(TJC_PAGE_WIFI_LIST_2);
             mks_wpa_cli_close_connection();
-	    go_to_network();
-	    scan_ssid_and_show();
+			go_to_network();
+			scan_ssid_and_show();
             break;
+
         default:
             break;
         }
@@ -2388,7 +2415,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             page_to(TJC_PAGE_WIFI_LIST_2);
             printing_wifi_keyboard_enabled = false;
             //4.1.3 CLL 修复WiFi刷新bug
-	    set_page_wifi_ssid_list(page_wifi_current_pages);
+			set_page_wifi_ssid_list(page_wifi_current_pages);
             refresh_page_wifi_list();
             break;
 
@@ -2475,6 +2502,8 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         switch(widget_id)
         {
         case TJC_PAGE_FILAMENT_POP_4_YES:
+            //4.1.4 CLL 修复断料检测与退料冲突bug
+            printer_idle_timeout_state = "Printing";
             filament_unload();
             //1.1.5 CLL 新增"退料中"界面
             page_to(TJC_PAGE_UNLOADING);
@@ -2664,6 +2693,82 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
             page_to(TJC_PAGE_PRINTING);
             break;
 
+        default:
+            break;
+        }
+        break;
+    
+    //4.1.5 CLL 新增息屏功能
+    case TJC_PAGE_SCREEN_SLEEP:
+        switch (widget_id)
+        {
+        case TJC_PAGE_SCREEN_SLEEP_ENTER:
+            page_to(TJC_PAGE_SCREEN_SLEEP);
+            if (printer_caselight_value == 1) {
+                led_on_off();
+                previous_caselight_value = true;
+            } else {
+                previous_caselight_value =false;
+            }
+            break;
+
+        case TJC_PAGE_SCREEN_SLEEP_EXIT:
+            if (previous_page_id == TJC_PAGE_FILE_LIST_1) {
+                page_to(previous_page_id);
+                refresh_page_files(page_files_current_pages);
+                refresh_page_files_list_1();
+                get_object_status();
+            } else if (previous_page_id == TJC_PAGE_FILE_LIST_2) {
+                page_to(previous_page_id);
+                refresh_page_files(page_files_current_pages);
+                refresh_page_files_list_2();
+                get_object_status();
+            } else {
+                page_to(previous_page_id);
+            }
+            if (previous_caselight_value == true) {
+                led_on_off();
+                previous_caselight_value = false;
+            }
+            break;
+        
+        default:
+            break;
+        }
+        break;
+
+    //4.1.5 CLL 新增设置zoffset界面
+    case TJC_PAGE_SET_ZOFFSET:
+        switch (widget_id)
+        {
+        case TJC_PAGE_SET_ZOFFSET_001:
+            set_auto_level_dist(0.01);
+            break;
+
+        case TJC_PAGE_SET_ZOFFSET_005:
+            set_auto_level_dist(0.05);
+            break;
+
+        case TJC_PAGE_SET_ZOFFSET_01:
+            set_auto_level_dist(0.1);
+            break;
+
+        case TJC_PAGE_SET_ZOFFSET_1:
+            set_auto_level_dist(1);
+            break;
+        
+        case TJC_PAGE_SET_ZOFFSET_UP:
+            start_auto_level_dist(false);
+            break;
+
+        case TJC_PAGE_SET_ZOFFSET_DOWN:
+            start_auto_level_dist(true);
+            break;
+
+        case TJC_PAGE_SET_ZOFFSET_NEXT:
+            save_current_zoffset();
+            break;
+        
         default:
             break;
         }

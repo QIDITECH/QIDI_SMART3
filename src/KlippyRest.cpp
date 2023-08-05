@@ -66,9 +66,11 @@ std::string send_request(std::string ip, std::string port, std::string method, s
     std::string url = "http://" + ip + ":" + port + "/" + method;
     std::string str_response = "";
 
+    MKSLOG("detect error line 69");
     //4.1.1 CLL 修复无法读取文件名中带空格文件
     url=replaceCharacters(url," ","%20");
 
+    MKSLOG("detect error line 73");
     MKSLOG_BLUE("Sending request to %s", url.data());
     try
     {
