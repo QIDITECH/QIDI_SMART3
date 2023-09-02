@@ -7,7 +7,7 @@ QIDISmart3 is a server-side software that interacts with the screen in the smart
 QIDI provides a packaged version file in the version bar next to it. Please download the compressed package file starting with SMART.  
 We have provided multiple different versions of source code. Please select the branch you want to download, and the name of the branch is the corresponding version name.
 
-## 4.1.3 Update content
+## 4.1.5 Update content
 1.Fixed an abnormal prompt bug that triggered material return detection during material return  
 2.Add a screen rest function. If the machine is not operated on a non printing interface, it will enter a screen stop state after 5 minutes.  
 3.Add a separate Z offset value function button.You can adjust the Z offset value before printing  
