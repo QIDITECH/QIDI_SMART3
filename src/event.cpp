@@ -387,21 +387,32 @@ void refresh_page_show() {
             // MKSLOG_BLUE("来到这个地方, # %s", printer_print_stats_filename.data());
             if (printer_print_stats_state == "printing") {
                 if (printer_print_stats_filename != "") {
+                    sleep(5);
                     MKSLOG_BLUE("跳入到打印函数\n");
                     //4.1.5 CLL 新增息屏功能
                     if (previous_caselight_value == true) {
                         led_on_off();
                         previous_caselight_value = false;
                     }
-                    print_start();  //2023.5.8 CLL 打印前发送"PRINT_START"指令
-                    if (level_mode_printing_is_printing_level == false) {
+                    //4.1.7 CLL 修改网页打印信息订阅
+                    if (jump_to_print == true) {
+                        print_start();
                         printer_ready = false;
-                        //2023.4.28 使网页打印显示预览图
                         show_preview_complete = false;
                         page_to(TJC_PAGE_PREVIEW);
-                        jump_to_print = true;
+                        break;
                     } else {
-                        page_to(TJC_PAGE_LEVEL_PRINT);
+                        print_start();  //2023.5.8 CLL 打印前发送"PRINT_START"指令
+                        if (level_mode_printing_is_printing_level == false) {
+                            printer_ready = false;
+                            //2023.4.28 使网页打印显示预览图
+                            //show_preview_complete = false;
+                            //jump_to_print = true;
+                            //page_to(TJC_PAGE_PREVIEW);
+                            page_to(TJC_PAGE_PRINTING);
+                        } else {
+                            page_to(TJC_PAGE_LEVEL_PRINT);
+                        }
                     }
                 }
             }
@@ -439,6 +450,8 @@ void refresh_page_show() {
         case TJC_PAGE_ABOUT_UPDATE:
         case TJC_PAGE_ABOUT:
         case TJC_PAGE_SERVICE:
+        case TJC_PAGE_RESTORE_CONFIG:
+        case TJC_PAGE_RESTORING:
             break;
         
         default:
@@ -725,6 +738,10 @@ void refresh_page_show() {
     //4.1.5 CLL 新增设置zoffset界面
     case TJC_PAGE_SET_ZOFFSET:
         refresh_page_set_zoffset();
+        break;
+
+    case TJC_PAGE_RESTORING:
+        refresh_page_restoring();
         break;
 
     default:
@@ -1255,7 +1272,7 @@ void refresh_page_manual_level() {
 
 void refresh_page_print_filament() {
     
-    MKSLOG_BLUE("Printer ide_timeout state: %s", printer_idle_timeout_state.c_str());
+    MKSLOG_BLUE("Printer idle_timeout state: %s", printer_idle_timeout_state.c_str());
     MKSLOG_BLUE("Printer webhooks state: %s", printer_webhooks_state.c_str());
     
     if (page_print_filament_extrude_restract_button == true) {
@@ -1334,6 +1351,11 @@ void refresh_page_print_filament() {
     if (printer_print_stats_state == "error") {
         page_to(TJC_PAGE_GCODE_ERROR);
         send_cmd_txt(tty_fd, "t0", "gcode error:" + output_console);
+    }
+
+    //4.1.7 CLL 打印时长时间暂停造成的打印中止会跳转至主页面
+    if (printer_idle_timeout_state == "Idle") {
+        page_to(TJC_PAGE_MAIN);
     }
 }
 
@@ -1592,16 +1614,25 @@ void refresh_page_filament() {
         */
         if (printer_filament_extruedr_dist == 10) {
             send_cmd_picc(tty_fd, "b7", "221");
+            send_cmd_picc2(tty_fd, "b7", "219");
             send_cmd_picc(tty_fd, "b8", "220");
+            send_cmd_picc2(tty_fd, "b8", "218");
             send_cmd_picc(tty_fd, "b9", "220");
+            send_cmd_picc2(tty_fd, "b9", "218");
         } else if (printer_filament_extruedr_dist == 20) {
             send_cmd_picc(tty_fd, "b7", "220");
+            send_cmd_picc2(tty_fd, "b7", "218");
             send_cmd_picc(tty_fd, "b8", "221");
+            send_cmd_picc2(tty_fd, "b8", "219");
             send_cmd_picc(tty_fd, "b9", "220");
+            send_cmd_picc2(tty_fd, "b9", "218");
         } else if (printer_filament_extruedr_dist == 50) {
             send_cmd_picc(tty_fd, "b7", "220");
+            send_cmd_picc2(tty_fd, "b7", "218");
             send_cmd_picc(tty_fd, "b8", "220");
+            send_cmd_picc2(tty_fd, "b8", "218");
             send_cmd_picc(tty_fd, "b9", "221");
+            send_cmd_picc2(tty_fd, "b9", "219");
         }
 
         
@@ -1687,6 +1718,11 @@ void refresh_page_filament() {
             if (page_filament_unload_button == true) {
                 page_to(TJC_PAGE_UNLOAD_FINISH);
                 page_filament_unload_button = false;
+            }
+            //4.1.7 CLL 修复耗材进出与断料检测冲突
+            if (previous_filament_sensor_state == true) {
+                set_filament_sensor();
+                previous_filament_sensor_state = false;
             }
         }
 }
@@ -1909,8 +1945,7 @@ void refresh_page_preview() {
     if (mks_file_parse_finished == true) {
     if (show_preview_complete == false) {
         //4.1.5 CLL 修改当前在预览图界面仅能看到文件名称
-        std::string file_name = file_metadata_filename.substr(file_metadata_filename.rfind("/") + 1);
-        send_cmd_txt(tty_fd, "t0", file_name);
+        send_cmd_txt(tty_fd, "t0", file_metadata_filename.substr(file_metadata_filename.rfind("/") + 1));
 
         if (file_metadata_estimated_time) {
             send_cmd_txt(tty_fd, "t1", show_time(file_metadata_estimated_time));
@@ -2645,10 +2680,13 @@ void set_filament_extruder_target(bool positive) {
     if (printer_filament_extruder_target < 0) {
         printer_filament_extruder_target = 0;
         set_extruder_target(0);
-        set_mks_extruder_target(0);
+        //set_mks_extruder_target(0);
     } else {
         set_extruder_target(printer_filament_extruder_target);
-        set_mks_extruder_target(printer_filament_extruder_target);
+        //4.1.7 CLL 设置喷头温度保存下限为170
+        if (printer_filament_extruder_target > 170) {
+            set_mks_extruder_target(printer_filament_extruder_target);
+        }
     }
 }
 
@@ -2783,8 +2821,11 @@ void led_on_off() {
         */
     } else {
         ep->Send(json_run_a_gcode("SET_PIN PIN=caselight VALUE=0"));
-        mks_led_status = false;
-        set_mks_led_status();
+        //4.3.8 CLL 息屏不保存状态
+        if (previous_caselight_value == false) {
+            mks_led_status = false;
+            set_mks_led_status();
+        }
         /*
         if (current_page_id == TJC_PAGE_PRINTING) {
             send_cmd_picc(tty_fd, "b0", "54");
@@ -3350,10 +3391,10 @@ void filament_unload() {
     ep->Send(json_run_a_gcode("M603"));
 
     //4.1.4 CLL 修复断料检测与退料冲突bug
-    if (previous_filament_sensor_state == true) {
-        set_filament_sensor();
-        previous_filament_sensor_state = false;
-    }
+    //if (previous_filament_sensor_state == true) {
+    //    set_filament_sensor();
+    //    previous_filament_sensor_state = false;
+    //}
 }
 
 int get_cal_printed_time(int print_time) {
@@ -3671,6 +3712,7 @@ void clear_previous_data() {
     clear_page_preview();
     show_preview_complete = false;
     printing_keyboard_enabled = false;
+    jump_to_print = false;
 }
 
 //2023.5.8 CLL 打印前发送"PRINT_START_QD"指令
@@ -3822,4 +3864,18 @@ std::string replaceCharacters(const std::string& path, const std::string& search
         }
     }
     return result;
+}
+
+//4.1.7 CLL 新增恢复出厂设置功能
+void restore_config() {
+    system("cp /home/mks/klipper_config/config.mksini.bak /home/mks/klipper_config/config.mksini");
+    ep->Send(json_run_a_gcode("BED_MESH_PROFILE REMOVE=\"default\"\nSAVE_CONFIG"));
+    sleep(1);
+    page_to(TJC_PAGE_RESTORING);
+}
+
+void refresh_page_restoring() {
+    if (printer_idle_timeout_state == "Ready" && printer_webhooks_state == "ready") {
+        page_to(TJC_PAGE_MAIN);
+    }
 }

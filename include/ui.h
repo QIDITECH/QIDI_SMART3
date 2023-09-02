@@ -433,6 +433,8 @@
 #define TJC_PAGE_ABOUT_OOBE                 0x01
 #define TJC_PAGE_ABOUT_BACK                 0x02
 #define TJC_PAGE_ABOUT_S_BTN                0x08
+//4.1.7 CLL 新增恢复出厂设置功能
+#define TJC_PAGE_ABOUT_RESTORE              0x09
 
 #define TJC_PAGE_ABOUT_UPDATE       76
 #define TJC_PAGE_ABOUT_UPDATE_BTN_HOME      0x03
@@ -443,6 +445,8 @@
 #define TJC_PAGE_ABOUT_UPDATE_UPDATE        0x07
 #define TJC_PAGE_ABOUT_UPDATE_BACK          0x02
 #define TJC_PAGE_ABOUT_UPDATE_S_BTN         0x08
+//4.1.7 CLL 新增恢复出厂设置功能
+#define TJC_PAGE_ABOUT_UPDATE_RESTORE       0x09
 
 #define TJC_PAGE_UPDATE_SCREEN      77
 
@@ -520,6 +524,13 @@
 #define TJC_PAGE_SET_ZOFFSET_005             0x04
 #define TJC_PAGE_SET_ZOFFSET_01              0x05
 #define TJC_PAGE_SET_ZOFFSET_1               0x06
+
+//4.1.7 CLL 新增恢复出厂设置功能
+#define TJC_PAGE_RESTORE_CONFIG              110
+#define TJC_PAGE_RESTORE_CONFIG_YES          0x00
+#define TJC_PAGE_RESTORE_CONFIG_NO           0x01
+
+#define TJC_PAGE_RESTORING                   111
 
 void parse_cmd_msg_from_tjc_screen(char *cmd);
 void page_to(int page_id);

@@ -79,6 +79,8 @@ extern bool show_preview_complete;
 
 extern int current_page_id;
 
+extern bool jump_to_print;
+
 void parse_file_estimated_time(nlohmann::json response) {
     if (response["result"]["estimated_time"] != nlohmann::detail::value_t::null) {
         file_metadata_estimated_time = (float)response["result"]["estimated_time"];
@@ -320,6 +322,7 @@ void get_sub_dir_files_list(int button) {
         refresh_page_files(page_files_current_pages);
         refresh_page_files_list_2();
     } else if ("[f]" == page_files_list_show_type[button]) {
+        jump_to_print = false;
         show_preview_complete = false;
         page_files_path_stack.push(page_files_path);
         page_files_print_files_path = page_files_path + "/" + page_files_list_show_name[button];
@@ -327,6 +330,7 @@ void get_sub_dir_files_list(int button) {
         get_file_estimated_time(page_files_print_files_path.substr(1));
         page_to(TJC_PAGE_PREVIEW);
     } else if ("[c]" == page_files_list_show_type[button]) { //4.1.5 CLL 新增打印过文件会在文件列表第一页首个显示
+        jump_to_print = false;
         show_preview_complete = false;
         page_files_path_stack.push(page_files_path);
         page_files_print_files_path =page_files_path + "/.cache/" + page_files_list_show_name[button];

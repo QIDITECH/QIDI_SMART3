@@ -422,8 +422,8 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                     MKSLOG_BLUE("尝试连接新的wifi");
                     wlan_state_str = "disconnected";
                     mks_enable_network();
-		    flag=0;
-		    t=0;
+                    flag = 0;
+                    t = 0;
                 } else if (strstr(buf, "CTRL-EVENT-CONNECTED") != NULL) {
                     MKSLOG_BLUE("已经成功连接上wifi");
                     //4.1.3 CLL 修复WiFi刷新
@@ -433,8 +433,6 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                     //system("dhcpcd wlan0");
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_SUCCESS);
-			t=0;
-			flag=0;
                     }
 
                 } else if (strstr(buf, WPS_EVENT_AP_AVAILABLE) != NULL) {
@@ -447,11 +445,9 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                 } else if (strstr(buf, "pre-shared key may be incorrect") != NULL) {
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_FAILED);
-			flag=0;
-			t=0;
                     }
                 //4.1.3 CLL 修复WiFi刷新
-                } else if (strstr(buf, "CONN_FAILED") != NULL || strstr(buf,"timed out") != NULL ||strstr(buf,"WRONG_KEY") != NULL) {
+                } else if (strstr(buf, "CONN_FAILED") != NULL || strstr(buf,"timed out") != NULL || strstr(buf,"WRONG_KEY") != NULL) {
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_FAILED);
                         flag=0;
@@ -459,8 +455,6 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                     }
                 } else if (strstr(buf, "Associated with") != NULL) {
                     MKSLOG_RED("握手握手握手");
-		    flag=1;
-		    t=0;
                 }else if (strstr(buf,"NETWORK-NOT-FOUND") && current_page_id == TJC_PAGE_WIFI_CONNECT && flag==2) {   //4.1.4 CLL 修复WiFi
                     if (t<3) {
                         t++;
