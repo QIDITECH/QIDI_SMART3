@@ -24,9 +24,11 @@
 #define TJC_PAGE_OPEN_VIDEO_1_NEXT          0x00
 
 #define TJC_PAGE_OPEN_COMPENSAT             8
+//4.1.10 CLL 新增共振补偿超时强制跳转
+#define TJC_PAGE_OPEN_COMPENSAT_JUMP_OUT    0x00
 
 #define TJC_PAGE_OPEN_VIDEO2                81
-#define TJC_PAGE_OPEN_VIDEO2_NEXT           0
+#define TJC_PAGE_OPEN_VIDEO2_NEXT           0x00
 
 #define TJC_PAGE_MOVE_TIP                   82
 #define TJC_PAGE_MOVE_TIP_BACK              0x00
@@ -346,6 +348,8 @@
 #define TJC_PAGE_CHOOSE_MODEL       55
 
 #define TJC_PAGE_SYNTONY_MOVE       56
+//4.1.10 CLL 新增共振补偿超时强制跳转
+#define TJC_PAGE_SYNTONY_MOVE_JUMP_OUT      0x00
 
 #define TJC_PAGE_SYNTONY_FINISH     57
 
@@ -435,6 +439,8 @@
 #define TJC_PAGE_ABOUT_S_BTN                0x08
 //4.1.7 CLL 新增恢复出厂设置功能
 #define TJC_PAGE_ABOUT_RESTORE              0x09
+//4.1.10 CLL 新增输出日志功能
+#define TJC_PAGE_ABOUT_PRINT_LOG            0x0a
 
 #define TJC_PAGE_ABOUT_UPDATE       76
 #define TJC_PAGE_ABOUT_UPDATE_BTN_HOME      0x03
@@ -447,6 +453,8 @@
 #define TJC_PAGE_ABOUT_UPDATE_S_BTN         0x08
 //4.1.7 CLL 新增恢复出厂设置功能
 #define TJC_PAGE_ABOUT_UPDATE_RESTORE       0x09
+//4.1.10 CLL 新增输出日志功能
+#define TJC_PAGE_ABOUT_UPDATE_PRINT_LOG     0x0a
 
 #define TJC_PAGE_UPDATE_SCREEN      77
 
@@ -531,6 +539,12 @@
 #define TJC_PAGE_RESTORE_CONFIG_NO           0x01
 
 #define TJC_PAGE_RESTORING                   111
+
+//4.1.10 CLL 新增输出日志功能
+#define TJC_PAGE_PRINT_LOG_S               112
+#define TJC_PAGE_PRINT_LOG_F               113
+#define TJC_PAGE_PRINT_LOG_YES             0x00
+
 
 void parse_cmd_msg_from_tjc_screen(char *cmd);
 void page_to(int page_id);
