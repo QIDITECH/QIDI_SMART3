@@ -381,6 +381,7 @@ void tjc_event_clicked_handler(int page_id, int widget_id, int type_id) {
         switch (widget_id)
         {
         case TJC_PAGE_OPEN_FILAMENTVIDEO_1_NEXT:
+	    send_gcode("G28 Z\n G1 Z50\n");
             page_to(TJC_PAGE_OPEN_FILAMENTVIDEO_2);
             break;
 
