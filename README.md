@@ -7,16 +7,33 @@ QIDISmart3 is a server-side software that interacts with the screen in the smart
 QIDI provides a packaged version file in the version bar next to it. Please download the compressed package file starting with SMART.  
 We have provided multiple different versions of source code. Please select the branch you want to download, and the name of the branch is the corresponding version name.
 
-## 4.1.10 Update content
-1.Optimized the logic of material breakage detection
+## 4.1.12 Update content
 
-2.Optimized page jump logic after resonance
+### **FUNCTIONALITY UPDATE**
+<strong><ol>
+<li>Enhanced Filament Loading/Unloading During Printing: Modified the logic for filament loading and unloading. For unloading, a prompt to cut the filament is displayed. </li>
+<li>Modified Filament Loading Sizes: Options for filament loading sizes are now 20mm, 50mm, and 100mm.</li>
+<li>Deletion of Previous Print Cache Files Upon Update: The update will now automatically delete previously stored print cache files.</li>
+<li>
+Updated Default Save Parameters: By default, the filament runout detection will be enabled after the update.
+</li>
+<li>Preservation of Original Offset Values: The compensation values in the klipper_config/configuration will be retained post-update.
+</li>
+<li>Removal of Last Travel Distance in Leveling Record: The leveling process now starts from zero travel distance.</li>
+<li>Modifications to Hidden WIFI Functionality: The interface now includes an option to input a hidden WIFI network.</li>
+</ol></strong>
 
-3.Added the function of exporting logs
+### **UI UPDATE**
+<strong><ol>
+<li> UI Changes for Filament Runout Detection: Modified the interface icons corresponding to the enable/disable state during printing.</li>
+<li>Memory Full Pop-Up Notification: Added a notification for when the memory is full.</li>
+<li>Addition of an 'Updating' Interface: Introduced an interface screen that displays during updates.</li>
+</ol></strong>
 
-4.Revise and reset the factory settings function
-
-5.Adjusted the rising distance during boot up guidance
+### **BUG FIX**
+<strong><ol>
+<li>Fixed Leveling Completion Screen Freeze: Removed the conditional check after pressing the button, allowing for an unconditional transition to the next screen.</li>
+</ol></strong>
 
 ## Detailed update process
 #### Packaged files
