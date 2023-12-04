@@ -10,6 +10,7 @@
 #include "include/MakerbasePanel.h"
 #include "include/MakerbaseParseIni.h"
 #include "include/MakerbaseWiFi.h"
+#include "include/MakerbaseNetwork.h"
 
 #include "include/KlippyGcodes.h"
 
@@ -21,9 +22,13 @@
 #include "include/mks_wpa_cli.h"
 #include "include/mks_test.h"
 
+// #include <gtk/gtk.h>
 
 #include "include/ui.h"
 #include "include/send_msg.h"
+// #include "include/receive_msg.h"
+// #include "include/printer.h"
+// #include "include/systeminfo.h"
 #include "include/KlippyRest.h"
 #include "include/event.h"
 
@@ -40,24 +45,51 @@ bool is_download_to_screen = false;
 
 bool find_screen_tft_file = false;
 
+// extern struct wpa_ctrl *mon_conn;
 
 int main(int argc, char** argv) {
 
-    if (access("/dev/sda", F_OK) == 0) {
-        if (access("/dev/sda1", F_OK) == 0) {
-            if (access("/home/mks/gcode_files/sda1", F_OK) != 0) {
-                system("/usr/bin/systemctl --no-block restart makerbase-automount@sda1.service");
-            }
-        }
+
+	DIR *dir;
+	struct dirent *entry;
+
+	dir = opendir("/dev");
+
+	if (dir == NULL) {
+		perror("无法打开目录 /dev");
+	}
+
+	while ((entry = readdir(dir))) {
+		if (strstr(entry->d_name, "/dev/sd") == entry->d_name) {
+			if (strlen(entry->d_name) >= 8) {
+				char *partition_suffix = entry->d_name + 7;
+				if (partition_suffix[1] == '1') {
+					char command[256];
+                    snprintf(command, sizeof(command), "/usr/bin/systemctl --no-block restart makerbase-automount@%s.service", partition_suffix);
+					system(command);
+				}
+			}
+		}
+	}
+
+	// getIPAddress();
+	/*
+	if (access("/dev/sda", F_OK) == 0) {
+		if (access("/dev/sda1", F_OK) == 0) {
+			if (access("/home/mks/gcode_files/sda1", F_OK) != 0) {
+				system("/usr/bin/systemctl --no-block restart makerbase-automount@sda1.service");
+			}
+		}
+    }
+	*/
+
+    if (access("/home/mks/gcode_files/sda1/mksscreen.recovery", F_OK) == 0) {
+        system("cp /home/mks/gcode_files/sda1/mksscreen.recovery /root/800_480.tft; sync");
     }
 
-	if (access("/home/mks/gcode_files/sda1/mksscreen.recovery", F_OK) == 0) {
-		system("cp /home/mks/gcode_files/sda1/mksscreen.recovery /root/800_480.tft; sync");
-	}
-
-	if (access("/home/mks/gcode_files/sda1/mksclient.recovery", F_OK) == 0) {
-		system("dpkg -i /home/mks/gcode_files/sda1/mksclient.recovery; sync");
-	}
+    if (access("/home/mks/gcode_files/sda1/mksclient.recovery", F_OK) == 0) {
+        system("dpkg -i /home/mks/gcode_files/sda1/mksclient.recovery; sync");
+    }
 
 	if (access("/root/800_480.tft", F_OK) == 0) {
 		find_screen_tft_file = true;
@@ -66,7 +98,7 @@ int main(int argc, char** argv) {
 		find_screen_tft_file = false;
 		MKSLOG_BLUE("没有找到tft升级文件");
 	}
-	
+	/*
 	if (set_GPIO1_C5_high() == 0) {
 		MKSLOG("GPIO1_C5拉高成功");
 	} else {
@@ -84,25 +116,21 @@ int main(int argc, char** argv) {
 	} else {
 		MKSLOG("GPIO1_C3初始化失败");
 	}
-
-    if (find_screen_tft_file == true) {
-        system("/root/uart; mv /root/800_480.tft /root/800_480.tft.bak");
-        find_screen_tft_file = false;
-    }
-
-	if (access("/home/mks/gcode_files/sda1/QD_factory_mode.txt", F_OK) == 0) {
-		system("dmesg > /home/mks/gcode_files/sda1/mks-dmesg.log; sync; ");
-		if (access("/home/mks/gcode_files/sda1/mks-super.sh", F_OK) == 0) {
-			system("bash /home/mks/gcode_files/sda1/mks-super.sh");
-		}
+	*/
+	if (find_screen_tft_file == true) {
+		system("/root/uart; mv /root/800_480.tft /root/800_480.tft.bak");
+		// system("mv /root/800_480.tft /root/800_480.tft.bak");
+		find_screen_tft_file = false;
 	}
 
-	pthread_t monitor_thread;
-	pthread_t monitor_C3_thread;
+	// pthread_t monitor_thread;
+	// pthread_t monitor_C3_thread;
 	pthread_t wpa_recv_thread;
 
-	pthread_create(&monitor_thread, NULL, monitor_GPIO1_B2, NULL);
-	pthread_create(&monitor_C3_thread, NULL, monitor_GPIO1_C3, NULL);
+	// pthread_t test_thread;
+
+	// pthread_create(&monitor_thread, NULL, monitor_GPIO1_B2, NULL);
+	// pthread_create(&monitor_C3_thread, NULL, monitor_GPIO1_C3, NULL);
 	pthread_create(&wpa_recv_thread, NULL, mks_wifi_hdlevent_thread, NULL);
 
 
@@ -165,17 +193,18 @@ int main(int argc, char** argv) {
 				
 				page_to(current_page_id);
 
+                //4.1.1 CLL 修复开机读取不到参数
 				get_total_time();
-				sleep(1);
+				sleep(2);
 				sub_object_status();									// 订阅相关的参数
 
-				sleep(1);
+				sleep(2);
 
 				get_object_status();									// 主动获取必备的参数
-                sleep(2);
+				sleep(2);
 				init_mks_status();
 				mks_get_version();
-            }
+			}
 		}
 		catch(const std::exception& e)
 		{
@@ -184,11 +213,14 @@ int main(int argc, char** argv) {
 	}
 
 	while(1) {
-			if ((count = read(fd, buff, sizeof(buff))) > 0) {
-				char *cmd = buff;
-				parse_cmd_msg_from_tjc_screen(cmd);
-				memset(buff, 0, sizeof(buff));
-			}
+		// system("sync");
+		// if (is_download_to_screen == false) {
+		if ((count = read(fd, buff, sizeof(buff))) > 0) {
+			char *cmd = buff;
+			parse_cmd_msg_from_tjc_screen(cmd);
+			memset(buff, 0, sizeof(buff));
+		}
+		// }
 		usleep(5000);
 	}
 	close(fd);
