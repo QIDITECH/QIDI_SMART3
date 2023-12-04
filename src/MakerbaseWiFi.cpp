@@ -53,11 +53,12 @@ void set_page_wifi_ssid_list(int pages) {
     }
 }
 
+//4.1.3 CLL 修复WiFi刷新
 void get_ssid_list_pages() {
-    if (result_list.size() % 3 == 0) {
-        page_wifi_ssid_list_pages = ssid_list.size() / 3 - 1;
-    } else {
+    if (ssid_list.size() % 3 == 0) {
         page_wifi_ssid_list_pages = ssid_list.size() / 3;
+    } else {
+        page_wifi_ssid_list_pages = ssid_list.size() / 3 + 1;
     }
 
     if (page_wifi_ssid_list_pages > 8) {
@@ -488,9 +489,14 @@ int parse_scan_results(char* scan_results) {
     level_list.clear();
     ssid_list.clear();
 
-    char* lines[1024] = {0};
+    //4.1.3 CLL 修复WiFi刷新bug
+    //char* lines[1024] = {0};
+    char buffer[4096];
+    strcpy(buffer, scan_results);
+    char* lines[128] = {0};
     int num_lines = 0;
-    char* line = strtok(scan_results, "\n");
+    //char* line = strtok(scan_results, "\n");
+    char* line = strtok(buffer, "\n");
     while (line != NULL) {
         lines[num_lines++] = line;
         line = strtok(NULL, "\n");
@@ -500,7 +506,9 @@ int parse_scan_results(char* scan_results) {
         char* fields[5] = {0};
         int num_fields = 0;
 
-        char ssid_line[128] = {0};
+        //4.1.3 CLL 修复WiFi刷新
+        //char ssid_line[128] = {0};
+        char ssid_line[256] = {0};
         memset(ssid_line, 0x00, sizeof(ssid_line));
         strcpy(ssid_line, lines[i]);
         int ssid_line_index = 0;
@@ -511,17 +519,23 @@ int parse_scan_results(char* scan_results) {
             if (4 == num_fields) {
                 ssid_line_index = field - lines[i];
             }
-            
+            //4.1.3 CLL 修复WiFi刷新bug
             fields[num_fields++] = field;
             field = strtok(NULL, " \t");
+            if (5 == num_fields) {
+                break;
+            }
         }
 
         if (num_fields < 5) {
             printf("Invalid scan result: %s\n", lines[i]);
             continue;
         } else {
-            unsigned char ssid_name[64];
-            printf_decode(ssid_name, 64, ssid_line + ssid_line_index);
+            //4.1.3 CLL 修复WiFi刷新bug
+            //unsigned char ssid_name[64];
+            //printf_decode(ssid_name, 64, ssid_line + ssid_line_index);
+            unsigned char ssid_name[192];
+            printf_decode(ssid_name, 192, ssid_line + ssid_line_index);
             if (ssid_name[0] == '\x00') {
 
             } else {

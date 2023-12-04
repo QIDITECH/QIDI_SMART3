@@ -382,6 +382,9 @@ void test_wifi_run_cmd_status(void) {
 // }
 
 void *mks_wifi_hdlevent_thread(void *arg) {
+    //4.1.4 CLL 修复WiFi
+    int flag = 0;
+    int t = 0;
     char path[64] = {"\0"};
     sprintf(path, "/var/run/wpa_supplicant/wlan0");
 
@@ -419,26 +422,48 @@ void *mks_wifi_hdlevent_thread(void *arg) {
                     MKSLOG_BLUE("尝试连接新的wifi");
                     wlan_state_str = "disconnected";
                     mks_enable_network();
+                    flag = 0;
+                    t = 0;
                 } else if (strstr(buf, "CTRL-EVENT-CONNECTED") != NULL) {
                     MKSLOG_BLUE("已经成功连接上wifi");
+                    //4.1.3 CLL 修复WiFi刷新
+                    mks_enable_network();
+                    usleep(10000);
                     wlan_state_str = "connected";
-                    system("dhcpcd wlan0");
+                    //system("dhcpcd wlan0");
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_SUCCESS);
                     }
 
                 } else if (strstr(buf, WPS_EVENT_AP_AVAILABLE) != NULL) {
                     MKSLOG("Available WPS AP found in scan results.");
+                    //4.1.4 CLL 修复WiFi
+                    if (current_page_id == TJC_PAGE_WIFI_CONNECT&&flag==0){     //pwtest:在flag为0且在连接界面时，执行网络选择，且将flag置为2特殊状态值
+                        system("wpa_cli select_network 0");
+                        flag=2;
+                    }
                 } else if (strstr(buf, "pre-shared key may be incorrect") != NULL) {
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_FAILED);
                     }
-                } else if (strstr(buf, "CONN_FAILED") != NULL) {
+                //4.1.3 CLL 修复WiFi刷新
+                } else if (strstr(buf, "CONN_FAILED") != NULL || strstr(buf,"timed out") != NULL || strstr(buf,"WRONG_KEY") != NULL) {
                     if (current_page_id == TJC_PAGE_WIFI_CONNECT) {
                         page_to(TJC_PAGE_WIFI_FAILED);
+                        flag=0;
+                        t=0;
                     }
                 } else if (strstr(buf, "Associated with") != NULL) {
                     MKSLOG_RED("握手握手握手");
+                }else if (strstr(buf,"NETWORK-NOT-FOUND") && current_page_id == TJC_PAGE_WIFI_CONNECT && flag==2) {   //4.1.4 CLL 修复WiFi
+                    if (t<3) {
+                        t++;
+                    } else if (t==3) {
+                        page_to(TJC_PAGE_WIFI_FAILED);
+                        system("wpa_cli disable_network 0");
+                        flag=0;
+                        t=0;
+                    }
                 }
             }
         } else {
@@ -450,10 +475,11 @@ void *mks_wifi_hdlevent_thread(void *arg) {
 }
 
 int mks_wpa_scan_scanresults() {
-    // char path[64] = {"\0"};
+    //4.1.3 CLL 修复WiFi刷新
+    char path[64] = {"\0"};
 
-    // sprintf(path, "/var/run/wpa_supplicant/wlan0");
-    // ctrl_conn = wpa_ctrl_open(path);
+    sprintf(path, "/var/run/wpa_supplicant/wlan0");
+    ctrl_conn = wpa_ctrl_open(path);
 
     if (!ctrl_conn) {
         printf("Open wpa control interfaces failed!\n");
@@ -467,7 +493,8 @@ int mks_wpa_scan_scanresults() {
 
     int ret;
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, "SCAN", strlen("SCAN"), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, "SCAN", strlen("SCAN"), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         printf("Command timed out.\n");
         // wpa_ctrl_close(ctrl_conn);
@@ -487,7 +514,8 @@ int mks_wpa_scan_scanresults() {
 
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, "SCAN_RESULTS", strlen("SCAN_RESULTS"), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, "SCAN_RESULTS", strlen("SCAN_RESULTS"), replyBuff, &reply_len, NULL);
     
 
     if (ret == -2) {
@@ -620,15 +648,15 @@ int mks_wifi_connect(char *ssid, char *psk) {
 */
 
 int mks_set_ssid(char *ssid) {
-
-    // char path[64] = {"\0"};
+    //4.1.3 CLL 修复WiFi刷新bug
+    char path[64] = {"\0"};
     char cmd[64];
     char replyBuff[2048] = {"\0"};
     size_t reply_len;
     int ret;
 
-    // sprintf(path, "/var/run/wpa_supplicant/wlan0");
-    // ctrl_conn = wpa_ctrl_open(path);
+    sprintf(path, "/var/run/wpa_supplicant/wlan0");
+    ctrl_conn = wpa_ctrl_open(path);
 
     if (!ctrl_conn) {
         printf("Open wpa control interfaces failed!\n");
@@ -643,7 +671,8 @@ int mks_set_ssid(char *ssid) {
     MKSLOG_RED("发送cmd命令为: %s", cmd);
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         MKSLOG_RED("Command timed out.");
         // wpa_ctrl_close(ctrl_conn);
@@ -668,11 +697,16 @@ int mks_set_ssid(char *ssid) {
 }
 
 int mks_set_psk(char *psk) {
+    //4.1.3 CLL 修复WiFi刷新bug
     // char path[64] = {"\0"};
     char cmd[64];
     char replyBuff[2048] = {"\0"};
     size_t reply_len;
     int ret;
+    //4.1.4 CLL 修复WiFi
+    char path[64] = {"\0"};
+    sprintf(path, "/var/run/wpa_supplicant/wlan0");
+    ctrl_conn = wpa_ctrl_open(path);
 
     // sprintf(path, "/var/run/wpa_supplicant/wlan0");
     // ctrl_conn = wpa_ctrl_open(path);
@@ -693,7 +727,8 @@ int mks_set_psk(char *psk) {
     // memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
     // ret = wpa_ctrl_request(ctrl_conn, "SET_NETWORK 0 psk \"makerbase318\"", strlen("SET_NETWORK 0 psk \"makerbase318\""), replyBuff, &reply_len, wpa_cli_msg_cb);
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == 0) {
         replyBuff[reply_len] = '\0';
         MKSLOG_YELLOW("返回的消息: %s", replyBuff);
@@ -703,6 +738,13 @@ int mks_set_psk(char *psk) {
             // mks_disable_network();
             system("ifconfig wlan0 down");
             system("ifconfig wlan0 up");
+            //4.1.4 CLL 修复WiFi
+            system("wpa_cli reassociate");
+            if ( mks_enable_network()==-2 && current_page_id == TJC_PAGE_WIFI_CONNECT) {
+                page_to(TJC_PAGE_WIFI_FAILED);
+            } else {
+                MKSLOG_RED("判断成功");
+            }
             // sleep(2);
             // mks_enable_network();
             return ret;
@@ -769,15 +811,17 @@ int mks_disable_network() {
 }
 
 int mks_enable_network() {
-    // char path[64] = {"\0"};
+    //4.1.3 CLL 修复WiFi刷新bug
+    char path[64] = {"\0"};
     char cmd[64];
 
     char replyBuff[4096] = {"\0"};
     size_t reply_len;
     int ret;
 
-    // sprintf(path, "/var/run/wpa_supplicant/wlan0");
-    // ctrl_conn = wpa_ctrl_open(path);
+    //4.1.4 CLL 修复WiFi
+    sprintf(path, "/var/run/wpa_supplicant/wlan0");
+    ctrl_conn = wpa_ctrl_open(path);
 
     if (!ctrl_conn) {
         MKSLOG_RED("Open wpa control interfaces failed!");
@@ -791,7 +835,8 @@ int mks_enable_network() {
     snprintf(cmd, sizeof(cmd) - 1, "ENABLE_NETWORK 0");
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         MKSLOG_RED("Command timed out.");
         // wpa_ctrl_close(ctrl_conn);
@@ -799,6 +844,7 @@ int mks_enable_network() {
     } else if (ret < 0) {
         MKSLOG_RED("Command failed.");
         // wpa_ctrl_close(ctrl_conn);
+        return ret;
     } else if (ret == 0) {
         replyBuff[reply_len] = '\0';
         MKSLOG_YELLOW("返回的消息: %s", replyBuff);
@@ -826,7 +872,8 @@ int mks_save_config() {
     sprintf(cmd, "SAVE_CONFIG");
     memset(replyBuff, 0x00, sizeof(replyBuff));
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), replyBuff, &reply_len, NULL);
     if (ret == -2) {
         MKSLOG_RED("Command timed out.");
         // wpa_ctrl_close(ctrl_conn);
@@ -862,7 +909,8 @@ int mks_wpa_cli_open_connection() {
 
     ctrl_conn = wpa_ctrl_open(path);
 
-    if (!ctrl_conn) {
+    //4.1.3 CLL 修复WiFi刷新bug
+    if (ctrl_conn) {
         mks_wpa_cli_connected = true;
         MKSLOG_RED("成功连接wpa connection");
         return 0;
@@ -951,7 +999,8 @@ int mks_wpa_get_status() {
 
     int ret;
     reply_len = sizeof(replyBuff) - 1;
-    ret = wpa_ctrl_request(ctrl_conn, "STATUS", strlen("STATUS"), replyBuff, &reply_len, wpa_cli_msg_cb);
+    //4.1.4 CLL 修复WiFi
+    ret = wpa_ctrl_request(ctrl_conn, "STATUS", strlen("STATUS"), replyBuff, &reply_len, NULL);
 
     if (ret == -2) {
         printf("Command timed out.\n");
