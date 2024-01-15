@@ -546,24 +546,37 @@
 #define TJC_PAGE_RESTORING                   111
 
 //4.1.10 CLL 新增输出日志功能
-#define TJC_PAGE_PRINT_LOG_S               112
-#define TJC_PAGE_PRINT_LOG_F               113
-#define TJC_PAGE_PRINT_LOG_YES             0x00
+#define TJC_PAGE_PRINT_LOG_S                 112
+#define TJC_PAGE_PRINT_LOG_F                 113
+#define TJC_PAGE_PRINT_LOG_YES               0x00
 
 // CLL 新增进料功能
-#define TJC_PAGE_LOADING                   114
+#define TJC_PAGE_PRE_HEATING_2               114
 
-#define TJC_PAGE_LOAD_FINISH               115
-#define TJC_PAGE_LOAD_FINISH_YES           0x00
-#define TJC_PAGE_LOAD_FINISH_RETRY         0x01
+#define TJC_PAGE_LOAD_FINISH                 115
+#define TJC_PAGE_LOAD_FINISH_YES             0x00
+#define TJC_PAGE_LOAD_FINISH_RETRY           0x01
 
-#define TJC_PAGE_PRE_UNLOAD                116
-#define TJC_PAGE_PRE_UNLOAD_NEXT           0x00
+#define TJC_PAGE_PRE_UNLOAD                  116
+#define TJC_PAGE_PRE_UNLOAD_NEXT             0x00
+#define TJC_PAGE_PRE_UNLOAD_BACK             0x01
 
-#define TJC_PAGE_MEMORY_WARNING            117
-#define TJC_PAGE_MEMORY_WARNING_YES        0x00
+#define TJC_PAGE_MEMORY_WARNING              117
+#define TJC_PAGE_MEMORY_WARNING_YES          0x00
 
-#define TJC_PAGE_UPDATING                  118
+#define TJC_PAGE_UPDATING                    118
+
+#define TJC_PAGE_PRE_LOAD                    119
+#define TJC_PAGE_PRE_LOAD_NEXT               0x00
+#define TJC_PAGE_PRE_LOAD_BACK               0x01
+
+#define TJC_PAGE_LOADING                     120
+
+#define TJC_PAGE_PRE_HEATING_1               121
+#define TJC_PAGE_PRE_HEATING_1_SET_1         0x00
+#define TJC_PAGE_PRE_HEATING_1_SET_2         0x01
+#define TJC_PAGE_PRE_HEATING_1_SET_3         0x02
+#define TJC_PAGE_PRE_HEATING_1_BACK          0x04
 
 void parse_cmd_msg_from_tjc_screen(char *cmd);
 void page_to(int page_id);

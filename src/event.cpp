@@ -344,6 +344,9 @@ std::string previous_zoffset;
 //4.1.5 CLL 新增息屏功能
 extern bool previous_caselight_value;
 
+extern int load_target;
+extern bool load_mode;
+
 /* 更新页面处理 */
 void refresh_page_show() {
     // MKSLOG_BLUE("当前的页面id, # %d", current_page_id);
@@ -750,6 +753,10 @@ void refresh_page_show() {
 
     case TJC_PAGE_LOADING:
         refresh_page_loading();
+        break;
+
+    case TJC_PAGE_PRE_HEATING_2:
+        refresh_page_pre_heating_2();
         break;
 
     default:
@@ -2733,7 +2740,7 @@ void start_retract() {
         send_cmd_vid(tty_fd, "gm1", "7");
         // send_cmd_vid_en(tty_fd, "gm0", 1);
     } else if (current_page_id == TJC_PAGE_PRINT_FILAMENT) {
-        send_cmd_vid(tty_fd, "gm0", "3");
+        // send_cmd_vid(tty_fd, "gm0", "3");
         // send_cmd_vid_en(tty_fd, "gm0", 1);
     }
 }
@@ -2744,7 +2751,7 @@ void start_extrude() {
         send_cmd_vid(tty_fd, "gm1", "6");
         // send_cmd_vid_en(tty_fd, "gm0", 1);
     } else if (current_page_id == TJC_PAGE_PRINT_FILAMENT) {
-        send_cmd_vid(tty_fd, "gm0", "2");
+        // send_cmd_vid(tty_fd, "gm0", "2");
     }
 }
 
@@ -3431,13 +3438,8 @@ void filament_unload() {
     // 加热到230度后自动退料
     //2023.4.28 修改自动退料操作
     //ep->Send(json_run_a_gcode("M84\nM109 T0 S230\nM83\nG1 E-30 F300\n"));           // 退料先解锁电机
-    if (printer_extruder_target >= 250) {
-        ep->Send(json_run_a_gcode("M109 S" + std::to_string(printer_extruder_target) + "\n"));
-    }else {
-        ep->Send(json_run_a_gcode("M109 S250\n"));
-    }
-    ep->Send(json_run_a_gcode("M603\n"));
-
+    ep->Send(json_run_a_gcode("M109 S" + std::to_string(load_target) + "\n"));
+    ep->Send(json_run_a_gcode("M604\n"));
     //4.1.4 CLL 修复断料检测与退料冲突bug
     //if (previous_filament_sensor_state == true) {
     //    set_filament_sensor();
@@ -3446,11 +3448,7 @@ void filament_unload() {
 }
 
 void filament_load() {
-    if (printer_extruder_target >= 250) {
-        ep->Send(json_run_a_gcode("M109 S" + std::to_string(printer_extruder_target) + "\n"));
-    } else {
-        ep->Send(json_run_a_gcode("M109 S250\n"));
-    }
+    ep->Send(json_run_a_gcode("M109 S" + std::to_string(load_target) + "\n"));
     ep->Send(json_run_a_gcode("M604\n"));
 }
 
@@ -3876,22 +3874,12 @@ void save_current_zoffset() {
 //1.1.5 CLL 新增"退料中"界面
 void refresh_page_unloading() {
     if (printer_idle_timeout_state == "Ready") {
-        if (printer_print_stats_state == "paused") {
-            send_cmd_pic(tty_fd, "unload_finish.b[0]", "234");
-        } else {
-            send_cmd_pic(tty_fd, "unload_finish.b[0]", "233");
-        }
         page_to(TJC_PAGE_UNLOAD_FINISH);
     }
 }
 
 void refresh_page_loading() {
     if (printer_idle_timeout_state == "Ready") {
-        if (printer_print_stats_state != "paused") {
-            send_cmd_pic(tty_fd, "load_finish.b[0]", "233");
-        } else {
-            send_cmd_pic(tty_fd, "load_finish.b[0]", "234");
-        }
         page_to(TJC_PAGE_LOAD_FINISH);
     }
 }
@@ -3951,7 +3939,11 @@ std::string replaceCharacters(const std::string& path, const std::string& search
 
 //4.1.7 CLL 新增恢复出厂设置功能
 void restore_config() {
-    system("cp /home/mks/klipper_config/config.mksini.bak /home/mks/klipper_config/config.mksini");
+    system("rm /home/mks/gcode_files/.cache/*");
+    system("curl -X POST http://127.0.0.1:7125/server/history/reset_totals");
+    system("curl -X DELETE 'http://127.0.0.1:7125/server/history/job?all=true'");
+    system("rm /home/mks/gcode_files/.cache/*\n");
+    system("cp /home/mks/klipper_config/config.mksini.bak /home/mks/klipper_config/config.mksini\n");
     //ep->Send(json_run_a_gcode("BED_MESH_PROFILE REMOVE=\"default\"\nSAVE_CONFIG"));
     //sleep(1);
     //page_to(TJC_PAGE_RESTORING);
@@ -3989,4 +3981,15 @@ void filament_sensor_switch(bool status) {
 //4.1.10 CLL 新增共振补偿超时强制跳转
 void send_gcode(std::string command) {
     ep->Send(json_run_a_gcode(command));
+}
+
+void refresh_page_pre_heating_2() {
+    send_cmd_txt(tty_fd, "t1", "(" + std::to_string(printer_extruder_temperature) + "/" + std::to_string(printer_extruder_target) + ")");
+    if (printer_extruder_temperature == load_target) {
+        if (load_mode == true) {
+            page_to(TJC_PAGE_LOADING);
+        } else {
+            page_to(TJC_PAGE_UNLOADING);
+        }
+    }
 }

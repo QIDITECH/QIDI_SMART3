@@ -259,4 +259,6 @@ void open_down_50();
 
 void refresh_page_loading();
 
+void refresh_page_pre_heating_2();
+
 #endif
