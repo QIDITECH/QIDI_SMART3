@@ -8,10 +8,10 @@ QIDISmart3 is a server-side software that interacts with the screen in the smart
 QIDI provides a packaged version file in the version bar next to it. Please download the compressed package file starting with SMART.  
 We have provided multiple different versions of source code. Please select the branch you want to download, and the name of the branch is the corresponding version name.
 
+
 ## 4.1.13 Update content
 
 <strong><ol>
-
 <li>SOC Update: WiFi settings will be preserved after updates.</li>
 <li>Material Handling: Improved logic for material feeding and retraction.</li>
 <li>Heating Limit: Maximum chamber heating restricted to 65 degrees Celsius.</li>
